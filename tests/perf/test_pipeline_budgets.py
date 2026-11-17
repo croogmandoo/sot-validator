@@ -15,8 +15,9 @@ Stage                 Measured         Budget
 classification        12.7 s           39.0 s (CLASSIFICATION_BUDGET_SECONDS)
 FDB mapping           2.91 s           9.0 s (FDB_MAPPING_BUDGET_SECONDS)
 snapshot diffing      0.43 s           1.5 s (SNAPSHOT_DIFF_BUDGET_SECONDS)
-HTML dashboard        7.0 s            21.0 s (DASHBOARD_BUDGET_SECONDS)
-tracemalloc peak      1225 MiB         3700 MiB (PEAK_MEMORY_BUDGET_BYTES)
+HTML dashboard        7.1 s            21.0 s (DASHBOARD_BUDGET_SECONDS)
+HTML dashboard size   14,426,632 ch    43,922,607 ch (DASHBOARD_HTML_BUDGET_CHARS)
+tracemalloc peak      859 MiB          2600 MiB (PEAK_MEMORY_BUDGET_BYTES)
 
 Classification was measured after ``classify_site`` started building one
 per-call index of the site's IP records (by IP, normalized MAC and assigned
@@ -25,6 +26,16 @@ DHCP collector started indexing its /24-scoped leases by IP and normalized
 hostname. Before the indexes the fleet took 50.5 s, and before the earlier
 DHCP scoped-lease and ARP MAC normalization caches a 600-host site took about
 19 s to classify.
+
+The dashboard embeds its inventory table as one gzip-compressed, base64-encoded
+JSON block that the browser decodes and renders, instead of 122,700
+server-rendered rows. Before that change the dashboard was 219,613,038 chars
+(BASELINE_DASHBOARD_HTML_CHARS), rendered in 6.8-7.5 s and the tracemalloc peak
+was 1213 MiB; after it the dashboard is 14,426,632 chars (15x smaller). The
+render time is the median of 16 runs (6.3-8.1 s, against 7.5 s for the old
+renderer interleaved in the same process): most of it is the JSON report
+enrichment and /24 subnet utilization, which this change does not touch, so
+the dashboard budget stays at 21.0 s.
 
 Peak memory is measured with ``tracemalloc`` in its own test so its overhead
 does not distort the wall-clock budgets. These tests are marked ``perf`` and
@@ -55,7 +66,9 @@ CLASSIFICATION_BUDGET_SECONDS = 39.0
 FDB_MAPPING_BUDGET_SECONDS = 9.0
 SNAPSHOT_DIFF_BUDGET_SECONDS = 1.5
 DASHBOARD_BUDGET_SECONDS = 21.0
-PEAK_MEMORY_BUDGET_BYTES = 3700 * 1024 * 1024
+PEAK_MEMORY_BUDGET_BYTES = 2600 * 1024 * 1024
+BASELINE_DASHBOARD_HTML_CHARS = 219_613_038
+DASHBOARD_HTML_BUDGET_CHARS = BASELINE_DASHBOARD_HTML_CHARS // 5
 
 
 @pytest.fixture(scope="module")
@@ -102,6 +115,10 @@ def test_dashboard_render_within_budget(timings: PipelineTimings) -> None:
     assert timings.dashboard_seconds <= DASHBOARD_BUDGET_SECONDS, (
         f"dashboard render took {timings.dashboard_seconds:.2f}s "
         f"(budget {DASHBOARD_BUDGET_SECONDS}s)"
+    )
+    assert timings.html_length <= DASHBOARD_HTML_BUDGET_CHARS, (
+        f"dashboard is {timings.html_length} chars "
+        f"(budget {DASHBOARD_HTML_BUDGET_CHARS})"
     )
 
 
