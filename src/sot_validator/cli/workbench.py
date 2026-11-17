@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+from dataclasses import replace
 import json
+import os
 from pathlib import Path
 import sys
 import threading
@@ -28,6 +30,7 @@ from sot_validator.models import (
 )
 from sot_validator.topology import DevicePortManager, DeviceTypeCatalog
 from sot_validator.workbench import (
+    WorkbenchBindRefusedError,
     WorkbenchSecurityConfig,
     WorkbenchState,
     create_workbench_server,
@@ -43,14 +46,77 @@ def _workbench_url(server_address: Sequence[Any]) -> str:
     return f"http://{host}:{bound_port}/"
 
 
+_TOKEN_ENV_VAR = "SOT_WORKBENCH_TOKEN"
+
+
+def _read_token_file(path: Path) -> str:
+    """Read a token file as UTF-8, dropping exactly one trailing newline."""
+    text = path.read_text(encoding="utf-8")
+    if text.endswith("\r\n"):
+        return text[:-2]
+    if text.endswith("\n"):
+        return text[:-1]
+    return text
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
+    cli_token = getattr(args, "token", None)
+    token_file = getattr(args, "token_file", None)
+    if cli_token is not None and token_file is not None:
+        print(
+            "error: --token and --token-file cannot be used together",
+            file=sys.stderr,
+        )
+        return 2
+
+    token: Optional[str] = None
+    token_source = "--token"
+    if cli_token is not None:
+        token = cli_token
+    elif token_file is not None:
+        token_source = "--token-file"
+        try:
+            token = _read_token_file(Path(token_file))
+        except UnicodeDecodeError:
+            print(
+                f"error: --token-file {token_file}: file is not valid UTF-8",
+                file=sys.stderr,
+            )
+            return 2
+        except OSError as exc:
+            print(
+                f"error: --token-file {token_file}: "
+                f"{exc.strerror or exc.__class__.__name__}",
+                file=sys.stderr,
+            )
+            return 2
+    elif os.environ.get(_TOKEN_ENV_VAR):
+        token_source = _TOKEN_ENV_VAR
+        token = os.environ[_TOKEN_ENV_VAR]
+
+    quiet_token = bool(getattr(args, "quiet_token", False))
+    if quiet_token and token is None:
+        print(
+            "error: --quiet-token requires a supplied token "
+            f"(--token, --token-file or {_TOKEN_ENV_VAR})",
+            file=sys.stderr,
+        )
+        return 2
+
     try:
         security = WorkbenchSecurityConfig(
-            token=getattr(args, "token", None),
+            token=token,
             allow_remote=bool(getattr(args, "allow_remote", False)),
         )
     except ValueError as exc:
-        print(f"error: --token rejected: {exc}", file=sys.stderr)
+        print(f"error: {token_source} rejected: {exc}", file=sys.stderr)
+        return 2
+    try:
+        security = replace(
+            security, allowed_hosts=tuple(getattr(args, "allowed_hosts", None) or ())
+        )
+    except ValueError as exc:
+        print(f"error: --allowed-host rejected: {exc}", file=sys.stderr)
         return 2
 
     site = _load_single_site_snapshot(
@@ -74,13 +140,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
             server = create_workbench_server(
                 state, host=args.host, port=int(args.port), security=security
             )
-        except ValueError:
-            # The only ValueError here is the non-loopback bind refusal.
+        except WorkbenchBindRefusedError:
             print(
                 f"error: refusing to bind the workbench to non-loopback host "
                 f"{args.host!r}; pass --allow-remote to expose it on the network",
                 file=sys.stderr,
             )
+            return 2
+        except ValueError as exc:
+            print(f"error: cannot start the workbench: {exc}", file=sys.stderr)
             return 2
         except (OSError, OverflowError) as exc:
             print(
@@ -95,11 +163,14 @@ def cmd_serve(args: argparse.Namespace) -> int:
                 _ = state.get_state_payload()
                 return 0
 
-            print(
-                f"Workbench listening; open {_workbench_url(server.server_address)}"
-                f"#token={security.token}",
-                flush=True,
-            )
+            url = _workbench_url(server.server_address)
+            if quiet_token:
+                print(f"Workbench listening; open {url}", flush=True)
+            else:
+                print(
+                    f"Workbench listening; open {url}#token={security.token}",
+                    flush=True,
+                )
 
             if getattr(args, "once", False):
                 bound_host, bound_port = server.server_address[:2]
@@ -447,7 +518,29 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--token",
         type=str,
         default=None,
-        help="Bearer token for workbench writes (default: a fresh random token per start).",
+        help="Bearer token for workbench writes (default: $SOT_WORKBENCH_TOKEN, else a fresh random token per start).",
+    )
+    serve_parser.add_argument(
+        "--token-file",
+        dest="token_file",
+        type=Path,
+        default=None,
+        help="Read the bearer token from this UTF-8 file (one trailing newline is dropped).",
+    )
+    serve_parser.add_argument(
+        "--quiet-token",
+        dest="quiet_token",
+        action="store_true",
+        default=False,
+        help="Print the start-up URL without #token= (requires a supplied token).",
+    )
+    serve_parser.add_argument(
+        "--allowed-host",
+        dest="allowed_hosts",
+        action="append",
+        default=None,
+        metavar="NAME",
+        help="Extra Host header name to accept besides loopback and the bound host (repeatable).",
     )
     serve_parser.add_argument(
         "--allow-remote",
