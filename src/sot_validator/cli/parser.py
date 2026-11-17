@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from typing import Optional
 
 from sot_validator.cli import (
+    audit,
     campaign,
     cert_report,
     core,
@@ -15,7 +16,9 @@ from sot_validator.cli import (
     history,
     itsm,
     migration,
+    oui,
     ports,
+    power,
     quality,
     remediation,
     topology,
@@ -39,6 +42,9 @@ COMMAND_MODULES = (
     quality,
     cert_report,
     firmware,
+    oui,
+    audit,
+    power,
 )
 
 
