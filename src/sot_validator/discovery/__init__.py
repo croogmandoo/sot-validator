@@ -7,6 +7,8 @@ from sot_validator.discovery.fingerprinter import (
     DeviceFingerprint,
     RawServiceBanner,
     ServiceBannerFingerprinter,
+    TlsCertificate,
+    parse_tls_certificate,
 )
 from sot_validator.discovery.monitor import (
     DriftAlertDispatcher,
@@ -55,5 +57,7 @@ __all__ = [
     "SnapshotDiffReport",
     "SubnetDiscoveryScanner",
     "TLS_BANNER_PORTS",
+    "TlsCertificate",
     "parse_ip_neigh_output",
+    "parse_tls_certificate",
 ]

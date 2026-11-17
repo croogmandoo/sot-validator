@@ -189,12 +189,39 @@ def test_self_signed_cn_parsing_by_dn_style():
     ]
 
 
-def test_escaped_dn_separators_are_not_unescaped():
-    # Known limit: RFC 4514 escapes ("\\," and "\\+") are not decoded, so the CN
-    # ends at the escaped separator and the self-signed check does not match.
-    for issuer, cn in (("CN=Foo\\, Inc", "Foo, Inc"), ("CN=a\\+b", "a+b")):
-        record = _record(issuer=issuer, subject_cn=cn, not_after=FAR_FUTURE)
-        assert _evaluate(record) == []
+@pytest.mark.parametrize(
+    ("issuer", "cn"),
+    [
+        ("CN=Foo\\, Inc", "Foo, Inc"),
+        ("CN=a\\+b", "a+b"),
+        ("CN=caf\\C3\\A9", "café"),
+    ],
+)
+def test_escaped_dn_values_are_unescaped(issuer, cn):
+    record = _record(issuer=issuer, subject_cn=cn, not_after=FAR_FUTURE)
+    assert _single(record).issues == [ISSUE_SELF_SIGNED]
+
+
+def test_escaped_separator_does_not_start_a_cn():
+    # "\\," keeps ", CN=bar" inside the O value, so there is no CN attribute.
+    record = _record(issuer="O=Foo\\, CN=bar", subject_cn="bar", not_after=FAR_FUTURE)
+    assert _evaluate(record) == []
+
+
+@pytest.mark.parametrize(
+    ("issuer", "cn"),
+    [
+        ("CN=a\\", "a\\"),
+        ("CN=a\\q", "a\\q"),
+        ("CN=a\\F", "a\\F"),
+        ("CN=\\ZZx", "\\ZZx"),
+        ("CN=\\FF", "�"),
+        ("CN=\\5C\\2C", "\\,"),
+    ],
+)
+def test_invalid_or_lone_escapes_are_kept_literally(issuer, cn):
+    record = _record(issuer=issuer, subject_cn=cn, not_after=FAR_FUTURE)
+    assert _single(record).issues == [ISSUE_SELF_SIGNED]
 
 
 @pytest.mark.parametrize(
