@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from sot_validator.workbench.server import (
+    WorkbenchBindRefusedError,
     WorkbenchNotFoundError,
     WorkbenchRequestHandler,
     WorkbenchSecurityConfig,
@@ -17,6 +18,7 @@ from sot_validator.workbench.ui import (
 
 __all__ = [
     "DEFAULT_WORKBENCH_TITLE",
+    "WorkbenchBindRefusedError",
     "WorkbenchNotFoundError",
     "WorkbenchRequestHandler",
     "WorkbenchSecurityConfig",
