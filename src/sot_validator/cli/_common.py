@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import sys
 from typing import Any, Optional
 
 from sot_validator.classifier.engine import ClassificationEngine, ClassificationPolicy
@@ -36,6 +37,8 @@ from sot_validator.workbench import WorkbenchSecurityConfig
 DEFAULT_FIXTURE_EVALUATION_TIME = "2026-02-12T12:00:00Z"
 DEFAULT_DISCOVERY_SAMPLE_EVALUATION_TIME = "2026-11-11T08:10:00Z"
 WORKBENCH_TOKEN_ENV_VAR = "SOT_WORKBENCH_TOKEN"
+# Raised while loading an unreadable or malformed input file; report commands turn them into exit 2.
+INPUT_ERRORS = (OSError, ValueError, KeyError, TypeError, AttributeError)
 
 
 def _parse_str_list(raw_values: Optional[Sequence[str]]) -> list[str]:
@@ -737,3 +740,37 @@ def _build_workbench_security(args: argparse.Namespace) -> WorkbenchSecurityConf
         )
     except ValueError as exc:
         raise ValueError(f"--allowed-host rejected: {exc}") from None
+
+
+def _input_error(flag: str, value: Any, exc: BaseException) -> int:
+    """Print a one-line `error: <flag> <value>: <reason>` to stderr and return exit code 2."""
+    reason = f"missing field {exc}" if isinstance(exc, KeyError) else str(exc)
+    message = f"{flag} {value}: {reason or type(exc).__name__}"
+    print(f"error: {' '.join(message.split())}", file=sys.stderr)
+    return 2
+
+
+def _parse_report_time(raw: Optional[str]) -> datetime:
+    """Parse an ISO-8601 `--evaluation-time` (naive means UTC), defaulting to the current UTC time."""
+    if raw is None:
+        return datetime.now(timezone.utc)
+    parsed = datetime.fromisoformat(str(raw).strip())
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _write_report_outputs(
+    args: argparse.Namespace, json_text: str, markdown_text: str
+) -> None:
+    """Write `--output-json` / `--output-md`, or print the JSON report when both are omitted."""
+    outputs = (
+        (getattr(args, "output_json", None), json_text),
+        (getattr(args, "output_md", None), markdown_text),
+    )
+    for path, text in outputs:
+        if path is not None:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_text(text, encoding="utf-8")
+    if all(path is None for path, _ in outputs):
+        print(json_text)
