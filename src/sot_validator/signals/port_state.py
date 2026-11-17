@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
-from typing import Any, Iterable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
 
 from sot_validator.models import (
     Equipment,
@@ -16,6 +16,9 @@ from sot_validator.models import (
     ValidationSignal,
 )
 from sot_validator.signals.base import SignalCollector, resolve_evaluation_time
+
+if TYPE_CHECKING:
+    from sot_validator.signals._site_index import SiteRecordIndex
 
 _ADMIN_DISABLED_VALUES: frozenset[str] = frozenset(
     {
@@ -208,7 +211,17 @@ class PortStateSignalEvaluator(SignalCollector):
             else self.evaluation_time
         )
 
-        resolved_ports = self._resolve_ports(target=target, site=site, ports=ports)
+        # classify_site passes a per-call index; it is only used for the exact inputs it indexes
+        index: Optional[SiteRecordIndex] = kwargs.get("_site_index")
+        if index is not None and not index.matches_ports(site, ports):
+            index = None
+        resolved_ports = self._resolve_ports(
+            target=target,
+            site=site,
+            ports=ports,
+            index=index,
+            dedicated=index is not None and bool(kwargs.get("_dedicated_ports")),
+        )
 
         if not resolved_ports:
             return ValidationSignal(
@@ -250,17 +263,25 @@ class PortStateSignalEvaluator(SignalCollector):
         target: Any,
         site: Optional[Site],
         ports: Optional[Sequence[Port]],
+        index: Optional[SiteRecordIndex] = None,
+        dedicated: bool = False,
     ) -> list[Port]:
         if isinstance(target, Port):
             return [target]
 
         if isinstance(target, Equipment):
             return self._resolve_equipment_ports(
-                equipment=target, site=site, ports=ports
+                equipment=target,
+                site=site,
+                ports=ports,
+                index=index,
+                dedicated=dedicated,
             )
 
         if isinstance(target, NetworkDevice):
-            return self._resolve_device_ports(device=target, site=site, ports=ports)
+            return self._resolve_device_ports(
+                device=target, site=site, ports=ports, index=index
+            )
 
         if isinstance(target, Iterable) and not isinstance(target, (str, bytes, dict)):
             collected: list[Port] = []
@@ -269,7 +290,13 @@ class PortStateSignalEvaluator(SignalCollector):
                     collected.append(item)
                 else:
                     collected.extend(
-                        self._resolve_ports(target=item, site=site, ports=ports)
+                        self._resolve_ports(
+                            target=item,
+                            site=site,
+                            ports=ports,
+                            index=index,
+                            dedicated=dedicated,
+                        )
                     )
             return collected
 
@@ -303,10 +330,19 @@ class PortStateSignalEvaluator(SignalCollector):
         equipment: Equipment,
         site: Optional[Site],
         ports: Optional[Sequence[Port]],
+        index: Optional[SiteRecordIndex] = None,
+        dedicated: bool = False,
     ) -> list[Port]:
         connected_refs = {
             ref.strip() for ref in equipment.connected_ports if ref and ref.strip()
         }
+        if index is not None:
+            return index.equipment_ports(
+                connected_refs,
+                equipment.equipment_id,
+                match_device_port_id=True,
+                dedicated=dedicated,
+            )
         matched: list[Port] = []
         for port in self._available_ports(site, ports):
             if (
@@ -325,6 +361,7 @@ class PortStateSignalEvaluator(SignalCollector):
         device: NetworkDevice,
         site: Optional[Site],
         ports: Optional[Sequence[Port]],
+        index: Optional[SiteRecordIndex] = None,
     ) -> list[Port]:
         matched: list[Port] = []
         seen: set[tuple[str, str, str]] = set()
@@ -337,6 +374,11 @@ class PortStateSignalEvaluator(SignalCollector):
 
         for port in device.ports:
             _add(port)
+
+        if index is not None:
+            for port in index.device_ports(device.device_id):
+                _add(port)
+            return matched
 
         for port in self._available_ports(site, ports):
             if (

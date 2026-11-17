@@ -21,6 +21,7 @@ from sot_validator.models import (
     ValidationResult,
     ValidationSignal,
 )
+from sot_validator.signals._site_index import SiteRecordIndex
 from sot_validator.signals.arp import ArpSignalEvaluator
 from sot_validator.signals.base import (
     SECONDS_PER_DAY,
@@ -264,6 +265,15 @@ def _has_actionable_identifiers(
     return True
 
 
+def _index_kwargs(
+    index: Optional[SiteRecordIndex], collector: Any, builtin: type
+) -> dict[str, Any]:
+    """Pass classify_site's index only to collectors using the built-in evaluate()."""
+    if index is None or getattr(type(collector), "evaluate", None) is not builtin.evaluate:
+        return {}
+    return {"_site_index": index}
+
+
 class ClassificationEngine:
     """Rule-based multi-signal classification engine producing ValidationResult records."""
 
@@ -393,6 +403,10 @@ class ClassificationEngine:
         provider: Optional[HypervisorInventoryProvider] = (
             kwargs.get("provider") or self.hypervisor_provider
         )
+        index: Optional[SiteRecordIndex] = kwargs.get("_site_index")
+        arp_index = _index_kwargs(index, self.arp_evaluator, ArpSignalEvaluator)
+        port_index = _index_kwargs(index, self.port_evaluator, PortStateSignalEvaluator)
+        dns_index = _index_kwargs(index, self.dns_dhcp_collector, DnsDhcpLeaseCollector)
 
         if isinstance(target, NetworkDevice):
             signals: list[ValidationSignal] = [
@@ -405,12 +419,14 @@ class ClassificationEngine:
                     evaluation_time=eval_dt,
                     active_within_days=self.policy.active_within_days,
                     stale_after_days=self.policy.stale_after_days,
+                    **arp_index,
                 ),
                 self.port_evaluator.evaluate(
                     target,
                     site=site,
                     ports=ports,
                     evaluation_time=eval_dt,
+                    **port_index,
                 ),
                 self.last_seen_evaluator.evaluate(
                     target,
@@ -433,6 +449,7 @@ class ClassificationEngine:
                         ip_addresses=ip_addresses,
                         scope_guard=scope_guard,
                         evaluation_time=eval_dt,
+                        **dns_index,
                     )
                 )
             if self.icmp_collector is not None:
@@ -485,6 +502,7 @@ class ClassificationEngine:
                         ip_addresses=ip_addresses,
                         scope_guard=scope_guard,
                         evaluation_time=eval_dt,
+                        **dns_index,
                     )
                 )
             if self.icmp_collector is not None:
@@ -518,12 +536,14 @@ class ClassificationEngine:
                         evaluation_time=eval_dt,
                         active_within_days=self.policy.active_within_days,
                         stale_after_days=self.policy.stale_after_days,
+                        **arp_index,
                     ),
                     self.port_evaluator.evaluate(
                         target,
                         site=site,
                         ports=ports,
                         evaluation_time=eval_dt,
+                        **port_index,
                     ),
                     self.last_seen_evaluator.evaluate(
                         target,
@@ -533,7 +553,16 @@ class ClassificationEngine:
                     ),
                 ]
 
-            if target.category is EquipmentCategory.VM:
+            is_vm = target.category is EquipmentCategory.VM
+            # The index can only stand in for the VM's dedicated port/IP lists when both evaluators use it
+            vm_indexed = (
+                is_vm
+                and bool(arp_index)
+                and bool(port_index)
+                and index is not None
+                and index.matches(site, ip_addresses, ports)
+            )
+            if is_vm and not vm_indexed:
                 all_ports = self._gather_ports(site, ports)
                 dedicated_ports = [
                     p
@@ -562,6 +591,9 @@ class ClassificationEngine:
                     evaluation_time=eval_dt,
                 )
             else:
+                dedicated: dict[str, Any] = (
+                    {"_dedicated_ports": True} if vm_indexed else {}
+                )
                 arp_sig = self.arp_evaluator.evaluate(
                     target,
                     site=site,
@@ -571,12 +603,16 @@ class ClassificationEngine:
                     evaluation_time=eval_dt,
                     active_within_days=self.policy.active_within_days,
                     stale_after_days=self.policy.stale_after_days,
+                    **arp_index,
+                    **dedicated,
                 )
                 port_sig = self.port_evaluator.evaluate(
                     target,
                     site=site,
                     ports=ports,
                     evaluation_time=eval_dt,
+                    **port_index,
+                    **dedicated,
                 )
 
             last_seen_sig = self.last_seen_evaluator.evaluate(
@@ -635,6 +671,7 @@ class ClassificationEngine:
                         ip_addresses=ip_addresses,
                         scope_guard=scope_guard,
                         evaluation_time=eval_dt,
+                        **dns_index,
                     )
                 )
             if self.icmp_collector is not None:
@@ -1527,6 +1564,15 @@ class ClassificationEngine:
     ) -> list[ValidationResult]:
         """Classify all devices, equipment, and (optionally) IP addresses in a Site batch."""
         results: list[ValidationResult] = []
+        # One lookup index per call so a site mutated between calls is never served stale
+        ip_addresses = kwargs.get("ip_addresses")
+        ports = kwargs.get("ports")
+        if isinstance(ip_addresses, (list, tuple, type(None))) and isinstance(
+            ports, (list, tuple, type(None))
+        ):
+            kwargs["_site_index"] = SiteRecordIndex(
+                site, ip_addresses=ip_addresses, ports=ports
+            )
         for device in site.devices:
             results.append(
                 self.classify_device(
