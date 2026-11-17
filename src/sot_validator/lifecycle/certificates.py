@@ -8,8 +8,10 @@ from datetime import datetime, timezone
 import ipaddress
 import json
 import re
+import string
 from typing import Any, Iterable, Mapping, Optional
 
+from sot_validator.discovery.fingerprinter import TlsCertificate
 from sot_validator.models import _parse_optional_datetime
 from sot_validator.reporting.generators import (
     _escape_md_cell,
@@ -30,8 +32,10 @@ WARNING_DAYS_THRESHOLD = 30
 MIN_RSA_KEY_BITS = 2048
 SHA1_WITH_RSA_OID = "1.2.840.113549.1.1.5"
 
-# The CN attribute of an RFC 4514 DN, where `,`, `;` and `+` separate attributes.
-_ISSUER_CN_PATTERN = re.compile(r"(?:^|[,;+])\s*CN\s*=\s*([^,;+]*)", re.IGNORECASE)
+# Unescaped `,`, `;` and `+` separate the attributes of an RFC 4514 DN.
+_RFC4514_SEPARATORS = frozenset(",;+")
+# Characters an RFC 4514 backslash escape may stand for.
+_RFC4514_ESCAPABLE = frozenset(',+"\\<>;=# ')
 # The CN attribute of an OpenSSL oneline DN ("/C=US/CN=name"), where only `/` separates.
 _ONELINE_ISSUER_CN_PATTERN = re.compile(r"/\s*CN\s*=\s*([^/]*)", re.IGNORECASE)
 
@@ -149,6 +153,37 @@ class CertificateRecord:
         )
 
 
+def certificate_records_from_tls(
+    certificates: Iterable[TlsCertificate],
+    site_id: str,
+    sot_hostname: Optional[str] = None,
+) -> list[CertificateRecord]:
+    """Turn fingerprinter ``TlsCertificate`` entries into ``CertificateRecord``s, in order."""
+    records: list[CertificateRecord] = []
+    for certificate in certificates:
+        if not isinstance(certificate, TlsCertificate):
+            raise ValueError(
+                f"certificates must be TlsCertificate instances, got {type(certificate).__name__}"
+            )
+        records.append(
+            CertificateRecord(
+                site_id=site_id,
+                ip=certificate.ip,
+                port=certificate.port,
+                subject_cn=certificate.subject_cn,
+                san_dns_names=list(certificate.san_dns_names),
+                issuer=certificate.issuer_dn,
+                not_before=certificate.not_before,
+                not_after=certificate.not_after,
+                signature_algorithm=certificate.signature_algorithm,
+                key_type=certificate.key_type,
+                key_bits=certificate.key_bits,
+                sot_hostname=sot_hostname,
+            )
+        )
+    return records
+
+
 @dataclass
 class CertificateFinding:
     """Expiry and weak-crypto issues found on one certificate endpoint."""
@@ -197,13 +232,61 @@ def _normalize_warn_days(warn_days: Iterable[int]) -> tuple[int, ...]:
     return tuple(sorted(set(values)))
 
 
+def _split_rfc4514_attributes(dn: str) -> list[str]:
+    """Split a DN on unescaped separators, keeping escapes for later decoding."""
+    attributes: list[str] = []
+    current: list[str] = []
+    i = 0
+    while i < len(dn):
+        ch = dn[i]
+        if ch == "\\" and i + 1 < len(dn):
+            current.append(dn[i : i + 2])
+            i += 2
+            continue
+        if ch in _RFC4514_SEPARATORS:
+            attributes.append("".join(current))
+            current = []
+        else:
+            current.append(ch)
+        i += 1
+    attributes.append("".join(current))
+    return attributes
+
+
+def _unescape_rfc4514_value(value: str) -> str:
+    """Decode RFC 4514 escapes; a lone or invalid escape keeps its backslash."""
+    parts: list[str] = []
+    pending = bytearray()
+    i = 0
+    while i < len(value):
+        if value[i] == "\\":
+            hex_pair = value[i + 1 : i + 3]
+            if len(hex_pair) == 2 and all(c in string.hexdigits for c in hex_pair):
+                pending.append(int(hex_pair, 16))
+                i += 3
+                continue
+        if pending:
+            parts.append(pending.decode("utf-8", errors="replace"))
+            pending = bytearray()
+        if value[i] == "\\" and i + 1 < len(value) and value[i + 1] in _RFC4514_ESCAPABLE:
+            parts.append(value[i + 1])
+            i += 2
+            continue
+        parts.append(value[i])
+        i += 1
+    if pending:
+        parts.append(pending.decode("utf-8", errors="replace"))
+    return "".join(parts)
+
+
 def _issuer_common_name(issuer: str) -> str:
-    pattern = (
-        _ONELINE_ISSUER_CN_PATTERN if issuer.lstrip().startswith("/") else _ISSUER_CN_PATTERN
-    )
-    match = pattern.search(issuer)
-    if match is not None:
-        return match.group(1)
+    if issuer.lstrip().startswith("/"):
+        match = _ONELINE_ISSUER_CN_PATTERN.search(issuer)
+        return match.group(1) if match is not None else issuer
+    for attribute in _split_rfc4514_attributes(issuer):
+        attr_type, separator, value = attribute.partition("=")
+        if separator and attr_type.strip().upper() == "CN":
+            return _unescape_rfc4514_value(value.lstrip())
     return issuer
 
 
