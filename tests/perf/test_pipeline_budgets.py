@@ -12,15 +12,19 @@ Measured on an AMD Ryzen 7 5800X (8 cores, CachyOS Linux 7.3 x86_64), Python 3.1
 
 Stage                 Measured         Budget
 --------------------  ---------------  ----------------------------------------
-classification        50.5 s           150.0 s (CLASSIFICATION_BUDGET_SECONDS)
-FDB mapping           2.88 s           9.0 s (FDB_MAPPING_BUDGET_SECONDS)
+classification        12.7 s           39.0 s (CLASSIFICATION_BUDGET_SECONDS)
+FDB mapping           2.91 s           9.0 s (FDB_MAPPING_BUDGET_SECONDS)
 snapshot diffing      0.43 s           1.5 s (SNAPSHOT_DIFF_BUDGET_SECONDS)
 HTML dashboard        7.0 s            21.0 s (DASHBOARD_BUDGET_SECONDS)
-tracemalloc peak      1205 MiB         3700 MiB (PEAK_MEMORY_BUDGET_BYTES)
+tracemalloc peak      1225 MiB         3700 MiB (PEAK_MEMORY_BUDGET_BYTES)
 
-Classification was measured after caching the DHCP collector's /24-scoped
-lease list and ARP MAC normalization; before those fixes a 600-host site took
-about 19 s to classify.
+Classification was measured after ``classify_site`` started building one
+per-call index of the site's IP records (by IP, normalized MAC and assigned
+object id) and ports (by port reference, device and connected device), and the
+DHCP collector started indexing its /24-scoped leases by IP and normalized
+hostname. Before the indexes the fleet took 50.5 s, and before the earlier
+DHCP scoped-lease and ARP MAC normalization caches a 600-host site took about
+19 s to classify.
 
 Peak memory is measured with ``tracemalloc`` in its own test so its overhead
 does not distort the wall-clock budgets. These tests are marked ``perf`` and
@@ -47,7 +51,7 @@ FLEET_SITES = 100
 FLEET_SUBNETS_PER_SITE = 10
 FLEET_HOSTS_PER_SUBNET = 60
 
-CLASSIFICATION_BUDGET_SECONDS = 150.0
+CLASSIFICATION_BUDGET_SECONDS = 39.0
 FDB_MAPPING_BUDGET_SECONDS = 9.0
 SNAPSHOT_DIFF_BUDGET_SECONDS = 1.5
 DASHBOARD_BUDGET_SECONDS = 21.0

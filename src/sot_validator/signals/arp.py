@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Iterable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
 
 from sot_validator.models import (
     ArpEntry,
@@ -25,6 +25,9 @@ from sot_validator.signals.base import (
     resolve_evaluation_time,
     validate_recency_thresholds,
 )
+
+if TYPE_CHECKING:
+    from sot_validator.signals._site_index import SiteRecordIndex
 
 
 def _normalize_mac(mac: Optional[str]) -> Optional[str]:
@@ -69,19 +72,33 @@ def _resolve_equipment_macs(
     equipment: Equipment,
     site: Optional[Site],
     ports: Optional[Sequence[Port]],
+    index: Optional[SiteRecordIndex] = None,
+    dedicated: bool = False,
 ) -> set[str]:
     macs: set[str] = set()
     connected_refs = set(equipment.connected_ports)
-    for port in _collect_ports(site, ports):
-        if (
-            port.port_id in connected_refs
-            or port.name in connected_refs
-            or f"{port.device_id}:{port.name}" in connected_refs
-            or port.connected_device_id == equipment.equipment_id
-        ):
-            norm_mac = _normalize_mac(port.connected_mac)
-            if norm_mac:
-                macs.add(norm_mac)
+    if index is not None:
+        matched = index.equipment_ports(
+            connected_refs,
+            equipment.equipment_id,
+            match_device_port_id=False,
+            dedicated=dedicated,
+        )
+    else:
+        matched = [
+            port
+            for port in _collect_ports(site, ports)
+            if (
+                port.port_id in connected_refs
+                or port.name in connected_refs
+                or f"{port.device_id}:{port.name}" in connected_refs
+                or port.connected_device_id == equipment.equipment_id
+            )
+        ]
+    for port in matched:
+        norm_mac = _normalize_mac(port.connected_mac)
+        if norm_mac:
+            macs.add(norm_mac)
     return macs
 
 
@@ -139,6 +156,11 @@ class ArpSignalEvaluator(SignalCollector):
         )
         active_days, stale_days = validate_recency_thresholds(active_days, stale_days)
 
+        # classify_site passes a per-call index; it is only used for the exact inputs it indexes
+        index: Optional[SiteRecordIndex] = kwargs.get("_site_index")
+        if index is not None and not index.matches(site, ip_addresses, ports):
+            index = None
+
         eval_dt = (
             resolve_evaluation_time(evaluation_time)
             if evaluation_time is not None
@@ -155,6 +177,8 @@ class ArpSignalEvaluator(SignalCollector):
             ip_addresses=ip_addresses,
             arp_entries=arp_entries,
             ports=ports,
+            index=index,
+            dedicated=index is not None and bool(kwargs.get("_dedicated_ports")),
         )
 
         if not candidates:
@@ -263,6 +287,8 @@ class ArpSignalEvaluator(SignalCollector):
         ip_addresses: Optional[Sequence[IPAddress]],
         arp_entries: Optional[Sequence[ArpEntry]],
         ports: Optional[Sequence[Port]],
+        index: Optional[SiteRecordIndex] = None,
+        dedicated: bool = False,
     ) -> list[_ArpCandidate]:
         if isinstance(target, ArpEntry):
             return [
@@ -284,6 +310,8 @@ class ArpSignalEvaluator(SignalCollector):
                 ip_addresses=ip_addresses,
                 arp_entries=arp_entries,
                 ports=ports,
+                index=index,
+                dedicated=dedicated,
             )
 
         if isinstance(target, NetworkDevice):
@@ -292,6 +320,7 @@ class ArpSignalEvaluator(SignalCollector):
                 site=site,
                 ip_addresses=ip_addresses,
                 arp_entries=arp_entries,
+                index=index,
             )
 
         if isinstance(target, Iterable) and not isinstance(target, (str, bytes, dict)):
@@ -304,6 +333,8 @@ class ArpSignalEvaluator(SignalCollector):
                         ip_addresses=ip_addresses,
                         arp_entries=arp_entries,
                         ports=ports,
+                        index=index,
+                        dedicated=dedicated,
                     )
                 )
             return candidates
@@ -368,36 +399,47 @@ class ArpSignalEvaluator(SignalCollector):
         ip_addresses: Optional[Sequence[IPAddress]],
         arp_entries: Optional[Sequence[ArpEntry]],
         ports: Optional[Sequence[Port]],
+        index: Optional[SiteRecordIndex] = None,
+        dedicated: bool = False,
     ) -> list[_ArpCandidate]:
-        all_ips: list[IPAddress] = []
-        if ip_addresses:
-            all_ips.extend(ip_addresses)
-        if site is not None:
-            all_ips.extend(site.ip_addresses)
-
         target_ips = {ip.strip() for ip in equipment.assigned_ips if ip and ip.strip()}
-        target_macs = _resolve_equipment_macs(equipment, site, ports)
+        target_macs = _resolve_equipment_macs(
+            equipment, site, ports, index=index, dedicated=dedicated
+        )
+
+        matched_records: list[IPAddress] = []
+        if index is not None:
+            matched_records = index.ip_records_matching(
+                ips=target_ips, object_id=equipment.equipment_id, macs=target_macs
+            )
+        else:
+            all_ips: list[IPAddress] = []
+            if ip_addresses:
+                all_ips.extend(ip_addresses)
+            if site is not None:
+                all_ips.extend(site.ip_addresses)
+            seen_records: set[int] = set()
+            for ip_rec in all_ips:
+                if id(ip_rec) in seen_records:
+                    continue
+                ip_mac_norm = _normalize_mac(ip_rec.arp_mac) or (
+                    _normalize_mac(ip_rec.arp_entry.arp_mac)
+                    if isinstance(ip_rec.arp_entry, ArpEntry)
+                    else None
+                )
+                if (
+                    ip_rec.ip in target_ips
+                    or ip_rec.assigned_object_id == equipment.equipment_id
+                    or (ip_mac_norm is not None and ip_mac_norm in target_macs)
+                ):
+                    seen_records.add(id(ip_rec))
+                    matched_records.append(ip_rec)
 
         matched_candidates: list[_ArpCandidate] = []
         matched_ip_set: set[str] = set()
-        seen_records: set[int] = set()
-
-        for ip_rec in all_ips:
-            if id(ip_rec) in seen_records:
-                continue
-            ip_mac_norm = _normalize_mac(ip_rec.arp_mac) or (
-                _normalize_mac(ip_rec.arp_entry.arp_mac)
-                if isinstance(ip_rec.arp_entry, ArpEntry)
-                else None
-            )
-            if (
-                ip_rec.ip in target_ips
-                or ip_rec.assigned_object_id == equipment.equipment_id
-                or (ip_mac_norm is not None and ip_mac_norm in target_macs)
-            ):
-                seen_records.add(id(ip_rec))
-                matched_ip_set.add(ip_rec.ip)
-                matched_candidates.extend(self._candidates_from_ip_address(ip_rec))
+        for ip_rec in matched_records:
+            matched_ip_set.add(ip_rec.ip)
+            matched_candidates.extend(self._candidates_from_ip_address(ip_rec))
 
         if arp_entries:
             for entry in arp_entries:
@@ -437,27 +479,36 @@ class ArpSignalEvaluator(SignalCollector):
         site: Optional[Site],
         ip_addresses: Optional[Sequence[IPAddress]],
         arp_entries: Optional[Sequence[ArpEntry]],
+        index: Optional[SiteRecordIndex] = None,
     ) -> list[_ArpCandidate]:
-        all_ips: list[IPAddress] = []
-        if ip_addresses:
-            all_ips.extend(ip_addresses)
-        if site is not None:
-            all_ips.extend(site.ip_addresses)
-
         mgmt_ip = device.management_ip.strip() if device.management_ip else None
+
+        matched_records: list[IPAddress] = []
+        if index is not None:
+            matched_records = index.ip_records_matching(
+                ips=(mgmt_ip,) if mgmt_ip else (), object_id=device.device_id
+            )
+        else:
+            all_ips: list[IPAddress] = []
+            if ip_addresses:
+                all_ips.extend(ip_addresses)
+            if site is not None:
+                all_ips.extend(site.ip_addresses)
+            seen_records: set[int] = set()
+            for ip_rec in all_ips:
+                if id(ip_rec) in seen_records:
+                    continue
+                if (mgmt_ip and ip_rec.ip == mgmt_ip) or (
+                    ip_rec.assigned_object_id == device.device_id
+                ):
+                    seen_records.add(id(ip_rec))
+                    matched_records.append(ip_rec)
+
         matched_candidates: list[_ArpCandidate] = []
         matched_ip_set: set[str] = set()
-        seen_records: set[int] = set()
-
-        for ip_rec in all_ips:
-            if id(ip_rec) in seen_records:
-                continue
-            if (mgmt_ip and ip_rec.ip == mgmt_ip) or (
-                ip_rec.assigned_object_id == device.device_id
-            ):
-                seen_records.add(id(ip_rec))
-                matched_ip_set.add(ip_rec.ip)
-                matched_candidates.extend(self._candidates_from_ip_address(ip_rec))
+        for ip_rec in matched_records:
+            matched_ip_set.add(ip_rec.ip)
+            matched_candidates.extend(self._candidates_from_ip_address(ip_rec))
 
         if arp_entries and mgmt_ip:
             for entry in arp_entries:
