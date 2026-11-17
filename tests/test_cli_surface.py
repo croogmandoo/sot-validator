@@ -783,6 +783,21 @@ NAMESPACE_CASES = [
          "func": "cmd_firmware_check"},
         id="firmware-check",
     ),
+    pytest.param(
+        ["fleet-summary", "--quality", "q.json", "--cert-report", "c.json", "--firmware-check", "f.json",
+         "--previous", "prev.json", "--site", "site-001", "--site", "site-002", "--output-dir", "out",
+         "--evaluation-time", "2026-01-01T00:00:00Z"],
+        {"subcommand": "fleet-summary",
+         "quality": Path("q.json"),
+         "cert_report": Path("c.json"),
+         "firmware_check": Path("f.json"),
+         "previous": Path("prev.json"),
+         "site": ["site-001", "site-002"],
+         "output_dir": Path("out"),
+         "evaluation_time": "2026-01-01T00:00:00Z",
+         "func": "cmd_fleet_summary"},
+        id="fleet-summary",
+    ),
 ]
 
 ALIAS_CASES = [
