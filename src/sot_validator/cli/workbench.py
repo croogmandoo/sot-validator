@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
-from dataclasses import replace
 import json
-import os
 from pathlib import Path
 import sys
 import threading
@@ -15,6 +13,7 @@ from urllib.request import urlopen
 
 from sot_validator.cli._common import (
     _add_source_arguments,
+    _build_workbench_security,
     _load_single_site_snapshot,
     _load_validation_results_file,
     _open_curation_store,
@@ -31,7 +30,6 @@ from sot_validator.models import (
 from sot_validator.topology import DevicePortManager, DeviceTypeCatalog
 from sot_validator.workbench import (
     WorkbenchBindRefusedError,
-    WorkbenchSecurityConfig,
     WorkbenchState,
     create_workbench_server,
     render_workbench_html,
@@ -46,78 +44,13 @@ def _workbench_url(server_address: Sequence[Any]) -> str:
     return f"http://{host}:{bound_port}/"
 
 
-_TOKEN_ENV_VAR = "SOT_WORKBENCH_TOKEN"
-
-
-def _read_token_file(path: Path) -> str:
-    """Read a token file as UTF-8, dropping exactly one trailing newline."""
-    text = path.read_text(encoding="utf-8")
-    if text.endswith("\r\n"):
-        return text[:-2]
-    if text.endswith("\n"):
-        return text[:-1]
-    return text
-
-
 def cmd_serve(args: argparse.Namespace) -> int:
-    cli_token = getattr(args, "token", None)
-    token_file = getattr(args, "token_file", None)
-    if cli_token is not None and token_file is not None:
-        print(
-            "error: --token and --token-file cannot be used together",
-            file=sys.stderr,
-        )
+    try:
+        security = _build_workbench_security(args)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
-
-    token: Optional[str] = None
-    token_source = "--token"
-    if cli_token is not None:
-        token = cli_token
-    elif token_file is not None:
-        token_source = "--token-file"
-        try:
-            token = _read_token_file(Path(token_file))
-        except UnicodeDecodeError:
-            print(
-                f"error: --token-file {token_file}: file is not valid UTF-8",
-                file=sys.stderr,
-            )
-            return 2
-        except OSError as exc:
-            print(
-                f"error: --token-file {token_file}: "
-                f"{exc.strerror or exc.__class__.__name__}",
-                file=sys.stderr,
-            )
-            return 2
-    elif os.environ.get(_TOKEN_ENV_VAR):
-        token_source = _TOKEN_ENV_VAR
-        token = os.environ[_TOKEN_ENV_VAR]
-
     quiet_token = bool(getattr(args, "quiet_token", False))
-    if quiet_token and token is None:
-        print(
-            "error: --quiet-token requires a supplied token "
-            f"(--token, --token-file or {_TOKEN_ENV_VAR})",
-            file=sys.stderr,
-        )
-        return 2
-
-    try:
-        security = WorkbenchSecurityConfig(
-            token=token,
-            allow_remote=bool(getattr(args, "allow_remote", False)),
-        )
-    except ValueError as exc:
-        print(f"error: {token_source} rejected: {exc}", file=sys.stderr)
-        return 2
-    try:
-        security = replace(
-            security, allowed_hosts=tuple(getattr(args, "allowed_hosts", None) or ())
-        )
-    except ValueError as exc:
-        print(f"error: --allowed-host rejected: {exc}", file=sys.stderr)
-        return 2
 
     site = _load_single_site_snapshot(
         getattr(args, "snapshot", None), args, default_to_fixtures=True
