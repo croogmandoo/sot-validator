@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 import copy
+from dataclasses import dataclass, make_dataclass
 from datetime import datetime, timedelta
 import io
 import json
@@ -455,6 +457,75 @@ def test_message_text_is_not_scanned():
     configure_logging("INFO", fmt="json", stream=stream)
     get_logger("x").info("community is %s", "public")
     assert json.loads(stream.getvalue())["msg"] == "community is public"
+
+
+@pytest.mark.parametrize("key", ["api_key", "APIKEY", "X-Api-Key", "db_passwd", "Credential",
+                                 "ssh_private_key", "Cookie", "Session_ID", "bearer_value"])
+def test_redact_masks_widened_key_fragments(key):
+    assert redact({key: "v"}) == {key: REDACTION_MASK}
+    assert redact({"cfg": [{key: "s", "ok": 1}]}) == {"cfg": [{key: REDACTION_MASK, "ok": 1}]}
+
+
+@dataclass
+class _Cred:
+    name: object
+    password: str
+
+
+@pytest.mark.parametrize("fmt", ["json", "text"])
+def test_dataclass_and_namedtuple_extras_are_redacted_by_field(fmt):
+    stream = io.StringIO()
+    configure_logging("INFO", fmt=fmt, stream=stream)
+    cred, loop = _Cred("svc", "hunter2"), _Cred([], "p")
+    loop.name.append(loop)
+    target = namedtuple("Target", ["host", "password"])("h1", "pw9")
+    get_logger("x").info("m", extra={"cred": cred, "target": target, "loop": loop})
+    output = stream.getvalue()
+    assert "hunter2" not in output and "pw9" not in output and REDACTION_MASK in output
+    if fmt == "json":
+        record = json.loads(output)
+        assert record["cred"] == {"name": "svc", "password": REDACTION_MASK}
+        assert record["target"] == {"host": "h1", "password": REDACTION_MASK}
+        assert record["loop"] == {"name": ["<cycle>"], "password": REDACTION_MASK}
+    assert cred.password == "hunter2"
+
+
+def test_redact_nested_frozen_namedtuple_and_cyclic_dataclasses():
+    masked = {"name": "a", "password": REDACTION_MASK}
+    frozen = make_dataclass("Frozen", ["inner", "api_key"], frozen=True)(_Cred("a", "p"), "k")
+    assert redact(frozen) == {"inner": masked, "api_key": REDACTION_MASK}
+    assert frozen.api_key == "k" and frozen.inner.password == "p"
+    shared, loop = _Cred("a", "p"), _Cred([], "p")
+    assert redact([shared, (shared,), {"c": shared}]) == [masked, (masked,), {"c": masked}]
+    nt = namedtuple("Target", ["host", "password"])("h1", "pw")
+    assert redact(nt) == {"host": "h1", "password": REDACTION_MASK}
+    assert redact((1, 2)) == (1, 2) and redact(_Cred) is _Cred
+    loop.name.append({"back": loop})
+    assert redact(loop) == {"name": [{"back": "<cycle>"}], "password": REDACTION_MASK}
+
+
+@pytest.mark.parametrize("msg, extra", [("ok\n2026-01-01T00:00:00+00:00 ERROR sot_validator fake", {}),
+                                        ("m", {"a\nb": 1, "c\rd": 2}),
+                                        ("m", {"v": _Cred("a\nb", "p"), "w": "x\r\ny"})])
+def test_text_output_is_single_line(msg, extra):
+    stream = io.StringIO()
+    configure_logging("INFO", fmt="text", stream=stream)
+    with log_context(run_id="r\n1", site_id="s\r2"):
+        get_logger("x").info(msg, extra=extra)
+    lines = stream.getvalue().splitlines()
+    assert len(lines) == 1 and "\r" not in lines[0] and ("ok\\n2026" in lines[0] or extra)
+
+
+def test_text_exc_info_traceback_layout_unchanged():
+    stream = io.StringIO()
+    configure_logging("INFO", fmt="text", stream=stream)
+    try:
+        raise KeyError("boom")
+    except KeyError:
+        get_logger("x").error("fail\nhere", exc_info=True)
+        expected = logging.Formatter().formatException(sys.exc_info())
+    first, rest = stream.getvalue().rstrip("\n").split("\n", 1)
+    assert first.endswith("fail\\nhere") and rest == expected
 
 
 # --- Metrics -----------------------------------------------------------------
