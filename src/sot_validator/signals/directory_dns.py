@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 import ipaddress
 from typing import Any, Optional
 
@@ -18,6 +19,7 @@ from sot_validator.models import (
     Subnet,
     ValidationSignal,
 )
+from sot_validator.signals._site_index import ScopeMemo, SiteRecordIndex
 from sot_validator.signals.base import (
     SECONDS_PER_DAY,
     SignalCollector,
@@ -28,7 +30,6 @@ from sot_validator.signals.base import (
 from sot_validator.signals.icmp import (
     ScopeViolationError,
     SubnetScopeGuard,
-    _parse_allocated_slash24,
     _parse_ipv4_host,
 )
 
@@ -65,6 +66,12 @@ def normalize_hostname(hostname: Optional[str]) -> Optional[str]:
     """Normalize a hostname case-insensitively, stripping domain suffixes and trailing '$'."""
     if hostname is None or not isinstance(hostname, str):
         return None
+    return _normalize_hostname_str(hostname)
+
+
+# Called for every lease and target hostname on every target, so cache the string work
+@lru_cache(maxsize=65536)
+def _normalize_hostname_str(hostname: str) -> Optional[str]:
     cleaned = hostname.strip().rstrip(".")
     if not cleaned:
         return None
@@ -1013,7 +1020,13 @@ class DnsDhcpLeaseCollector(SignalCollector):
             tuple[
                 Optional[SubnetScopeGuard],
                 list[tuple[DhcpLeaseRecord, Optional[str]]],
+                dict[str, list[int]],
+                dict[str, list[int]],
             ]
+        ] = None
+        # Parsed IP and /24 CIDR scope checks, valid only for the same guard object
+        self._scope_memo_cache: Optional[
+            tuple[Optional[SubnetScopeGuard], ScopeMemo]
         ] = None
 
     @staticmethod
@@ -1143,32 +1156,34 @@ class DnsDhcpLeaseCollector(SignalCollector):
             return SubnetScopeGuard.from_site(site)
         return None
 
+    def _scope_memo(self, guard: Optional[SubnetScopeGuard]) -> ScopeMemo:
+        cached = self._scope_memo_cache
+        if cached is None or cached[0] is not guard:
+            cached = (guard, ScopeMemo())
+            self._scope_memo_cache = cached
+        return cached[1]
+
     @staticmethod
     def _is_lease_in_slash24_scope(
         lease: DhcpLeaseRecord,
         guard: Optional[SubnetScopeGuard],
+        _memo: Optional[ScopeMemo] = None,
     ) -> bool:
-        try:
-            addr = _parse_ipv4_host(lease.ip)
-        except ScopeViolationError:
+        memo = _memo if _memo is not None else ScopeMemo()
+        addr, _, ip_in_scope = memo.host_scope(lease.ip, guard)
+        if addr is None:
             return False
 
         if lease.subnet_cidr is not None:
-            try:
-                lease_net = _parse_allocated_slash24(lease.subnet_cidr)
-            except ScopeViolationError:
+            lease_net, cidr_in_scope = memo.cidr_scope(lease.subnet_cidr, guard)
+            if lease_net is None:
                 return False
             if addr not in lease_net:
                 return False
-            if guard is not None and guard.allocated_subnets:
-                try:
-                    guard.validate_cidr_scope(lease.subnet_cidr)
-                except ScopeViolationError:
-                    return False
+            if not cidr_in_scope:
+                return False
 
-        if guard is not None:
-            return guard.is_ip_in_scope(str(addr))
-        return True
+        return ip_in_scope
 
     @staticmethod
     def _resolve_target_context(
@@ -1177,6 +1192,7 @@ class DnsDhcpLeaseCollector(SignalCollector):
         site: Optional[Site] = None,
         ip_addresses: Optional[Sequence[IPAddress]] = None,
         expected_hostname: Optional[str] = None,
+        index: Optional[SiteRecordIndex] = None,
     ) -> tuple[list[str], list[str], str]:
         """Return (target_ips, expected_hostnames, target_label)."""
         ips: list[str] = []
@@ -1195,11 +1211,13 @@ class DnsDhcpLeaseCollector(SignalCollector):
         if expected_hostname:
             _add_host(expected_hostname)
 
+        # With an index, the IP records are looked up per target below instead
         all_ip_recs: list[IPAddress] = []
-        if ip_addresses:
-            all_ip_recs.extend(ip_addresses)
-        if site is not None:
-            all_ip_recs.extend(site.ip_addresses)
+        if index is None:
+            if ip_addresses:
+                all_ip_recs.extend(ip_addresses)
+            if site is not None:
+                all_ip_recs.extend(site.ip_addresses)
 
         if isinstance(target, IPAddress):
             _add_ip(target.ip)
@@ -1207,7 +1225,10 @@ class DnsDhcpLeaseCollector(SignalCollector):
                 val = getattr(target, attr, None)
                 if isinstance(val, str):
                     _add_host(val)
-            if site is not None:
+            if index is not None:
+                for name in index.hostnames_for_ip_record(target):
+                    _add_host(name)
+            elif site is not None:
                 for eq in site.equipment:
                     if (
                         target.assigned_object_id == eq.equipment_id
@@ -1226,6 +1247,8 @@ class DnsDhcpLeaseCollector(SignalCollector):
             _add_host(target.name)
             for ip_str in target.assigned_ips:
                 _add_ip(ip_str)
+            if index is not None:
+                all_ip_recs = index.ip_records_for_object(target.equipment_id)
             for ip_rec in all_ip_recs:
                 if ip_rec.assigned_object_id == target.equipment_id:
                     _add_ip(ip_rec.ip)
@@ -1234,6 +1257,8 @@ class DnsDhcpLeaseCollector(SignalCollector):
         if isinstance(target, NetworkDevice):
             _add_host(target.hostname)
             _add_ip(target.management_ip)
+            if index is not None:
+                all_ip_recs = index.ip_records_for_object(target.device_id)
             for ip_rec in all_ip_recs:
                 if ip_rec.assigned_object_id == target.device_id:
                     _add_ip(ip_rec.ip)
@@ -1323,22 +1348,26 @@ class DnsDhcpLeaseCollector(SignalCollector):
             else self._dhcp_leases
         )
 
+        # classify_site passes a per-call index; it is only used for the exact inputs it indexes
+        index: Optional[SiteRecordIndex] = kwargs.get("_site_index")
+        if index is not None and not index.matches_ips(site, ip_addresses):
+            index = None
         raw_target_ips, raw_expected_hosts, target_label = self._resolve_target_context(
             target,
             site=site,
             ip_addresses=ip_addresses,
             expected_hostname=expected_hostname or hostname,
+            index=index,
         )
 
+        scope_memo = self._scope_memo(guard)
         in_scope_target_ips: list[str] = []
         out_of_scope_target_ips: list[str] = []
         for raw_ip in raw_target_ips:
-            try:
-                parsed_ip = str(_parse_ipv4_host(raw_ip))
-            except ScopeViolationError:
+            _, parsed_ip, in_scope = scope_memo.host_scope(raw_ip, guard)
+            if parsed_ip is None:
                 out_of_scope_target_ips.append(raw_ip)
-                continue
-            if guard is not None and not guard.is_ip_in_scope(parsed_ip):
+            elif not in_scope:
                 out_of_scope_target_ips.append(parsed_ip)
             else:
                 in_scope_target_ips.append(parsed_ip)
@@ -1372,26 +1401,45 @@ class DnsDhcpLeaseCollector(SignalCollector):
 
         # Filter DHCP leases to allocated /24 scope and match against target
         cached = self._scoped_lease_cache
-        if lease_pool is self._dhcp_leases and cached is not None and cached[0] is guard:
-            # The collector's own lease pool only needs filtering once per guard
-            scoped_leases = cached[1]
-        else:
+        if lease_pool is self._dhcp_leases and (cached is None or cached[0] is not guard):
+            # The collector's own lease pool only needs filtering and indexing once per guard
             scoped_leases = [
                 (lease, lease.normalized_hostname)
                 for lease in lease_pool
-                if self._is_lease_in_slash24_scope(lease, guard)
+                if self._is_lease_in_slash24_scope(lease, guard, scope_memo)
             ]
-            if lease_pool is self._dhcp_leases:
-                self._scoped_lease_cache = (guard, scoped_leases)
+            leases_by_ip: dict[str, list[int]] = {}
+            leases_by_host: dict[str, list[int]] = {}
+            for position, (lease, lease_host) in enumerate(scoped_leases):
+                leases_by_ip.setdefault(lease.ip, []).append(position)
+                if lease_host is not None:
+                    leases_by_host.setdefault(lease_host, []).append(position)
+            cached = (guard, scoped_leases, leases_by_ip, leases_by_host)
+            self._scoped_lease_cache = cached
 
         matched_leases: list[DhcpLeaseRecord] = []
-        for lease, lease_host in scoped_leases:
-            ip_match = bool(sot_ip_set and lease.ip in sot_ip_set)
-            host_match = bool(
-                sot_host_set and lease_host is not None and lease_host in sot_host_set
-            )
-            if ip_match or host_match:
-                matched_leases.append(lease)
+        if lease_pool is self._dhcp_leases and cached is not None:
+            # Index hits are sorted by pool position to keep the linear scan's order
+            scoped_leases, leases_by_ip, leases_by_host = cached[1:]
+            positions: set[int] = set()
+            for ip in sot_ip_set:
+                positions.update(leases_by_ip.get(ip, ()))
+            for host in sot_host_set:
+                positions.update(leases_by_host.get(host, ()))
+            matched_leases = [scoped_leases[pos][0] for pos in sorted(positions)]
+        else:
+            for lease in lease_pool:
+                if not self._is_lease_in_slash24_scope(lease, guard, scope_memo):
+                    continue
+                lease_host = lease.normalized_hostname
+                ip_match = bool(sot_ip_set and lease.ip in sot_ip_set)
+                host_match = bool(
+                    sot_host_set
+                    and lease_host is not None
+                    and lease_host in sot_host_set
+                )
+                if ip_match or host_match:
+                    matched_leases.append(lease)
 
         active_leases = [
             lease for lease in matched_leases if lease.is_active(eval_dt)
