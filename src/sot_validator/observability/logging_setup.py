@@ -7,8 +7,10 @@
 ``api_key``, ``apikey``, ``passwd``, ``credential``, ``private_key``, ``cookie``,
 ``session``, ``bearer``; matched case-insensitively as substrings after ``-`` is
 normalised to ``_``) replaced by ``REDACTION_MASK``. Dataclass instances and
-namedtuples are redacted by field name and rendered as dicts. Other arbitrary
-objects are not inspected and are still stringified with ``str()`` by the
+namedtuples are redacted by field name and rendered as dicts; ``repr=False``
+dataclass fields are always masked, and a dataclass without the generated
+``__repr__`` (for example ``config.SecretValue``) is masked whole. Other
+arbitrary objects are not inspected and are still stringified with ``str()`` by the
 formatters, so their ``__str__`` / ``__repr__`` can still expose secrets. Message
 text and positional args are not scanned. Text output escapes CR and LF so each
 record without ``exc_info`` is exactly one line.
@@ -38,6 +40,7 @@ import contextvars
 import dataclasses
 from datetime import datetime, timezone
 import functools
+import inspect
 import json
 import logging
 import math
@@ -98,8 +101,11 @@ def redact(value: Any) -> Any:
 
     Dict values under sensitive keys become ``REDACTION_MASK``; dicts, lists and
     tuples are walked at any depth. Dataclass instances and namedtuples are
-    redacted by field name and returned as plain dicts. A container that contains
-    itself is replaced by ``CYCLE_MARKER`` where it recurs. Other values,
+    redacted by field name and returned as plain dicts. Dataclass fields declared
+    ``repr=False`` are masked whatever their name, and a dataclass instance whose
+    class turned off or replaced the generated ``__repr__`` (such as
+    ``config.SecretValue``) is replaced by ``REDACTION_MASK``. A container that
+    contains itself is replaced by ``CYCLE_MARKER`` where it recurs. Other values,
     including dataclass classes and arbitrary objects, are returned unchanged and
     are later stringified with ``str()``, which may still expose secrets.
     """
@@ -109,6 +115,13 @@ def redact(value: Any) -> Any:
 def _is_namedtuple(value: Any) -> bool:
     fields = getattr(type(value), "_fields", None)
     return isinstance(value, tuple) and isinstance(fields, tuple)
+
+
+def _has_generated_repr(value: Any) -> bool:
+    if not type(value).__dataclass_params__.repr:
+        return False
+    generated = inspect.unwrap(type(value).__repr__)
+    return getattr(generated, "__qualname__", "").startswith("__create_fn__.<locals>.")
 
 
 def _redact_items(items: Iterable[tuple[Any, Any]], inner: frozenset[int]) -> dict[Any, Any]:
@@ -126,10 +139,14 @@ def _redact(value: Any, path: frozenset[int]) -> Any:
         return CYCLE_MARKER
     inner = path | {id(value)}
     if is_dataclass:
-        return _redact_items(
-            ((field.name, getattr(value, field.name)) for field in dataclasses.fields(value)),
-            inner,
-        )
+        if not _has_generated_repr(value):
+            return REDACTION_MASK
+        return {
+            field.name: REDACTION_MASK
+            if not field.repr or is_sensitive_key(field.name)
+            else _redact(getattr(value, field.name), inner)
+            for field in dataclasses.fields(value)
+        }
     if isinstance(value, Mapping):
         return _redact_items(value.items(), inner)
     if _is_namedtuple(value):
