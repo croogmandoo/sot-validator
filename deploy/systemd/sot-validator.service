@@ -1,0 +1,27 @@
+# sot-validator one-shot run, started by sot-validator.timer.
+# Paths and the command line below are placeholders; adjust them for your host.
+# Secrets never go in this file: they come from the EnvironmentFile.
+
+[Unit]
+Description=SoT Validator unattended inventory validation run
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Placeholder: service account created as in deploy/README.md.
+User=sot-validator
+Group=sot-validator
+# Placeholder: root-owned 0600 file with NAME=value lines for each ${env:NAME} in the TOML config.
+EnvironmentFile=/etc/sot-validator/sot-validator.env
+# Placeholder: run from the writable state directory so relative paths never hit the read-only root.
+WorkingDirectory=/var/lib/sot-validator/state
+# Placeholder: adjust the venv path, subcommand and flags (add your SoT source flag) for your deployment.
+ExecStart=/opt/sot-validator/venv/bin/python -m sot_validator run --all-sites --output-dir /var/lib/sot-validator/output --snapshot-dir /var/lib/sot-validator/state/snapshots
+
+ProtectSystem=strict
+# Placeholder: the only writable paths; keep them in step with the ExecStart directories.
+ReadWritePaths=/var/lib/sot-validator/output /var/lib/sot-validator/state
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes

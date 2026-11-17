@@ -1,0 +1,14 @@
+# Daily trigger for sot-validator.service.
+# Placeholder: adjust OnCalendar and RandomizedDelaySec for your run window.
+
+[Unit]
+Description=Daily SoT Validator unattended run
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=15min
+Unit=sot-validator.service
+
+[Install]
+WantedBy=timers.target
