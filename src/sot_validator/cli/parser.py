@@ -8,12 +8,15 @@ from typing import Optional
 
 from sot_validator.cli import (
     campaign,
+    cert_report,
     core,
     discovery,
+    firmware,
     history,
     itsm,
     migration,
     ports,
+    quality,
     remediation,
     topology,
     ups,
@@ -33,6 +36,9 @@ COMMAND_MODULES = (
     discovery,
     workbench,
     topology,
+    quality,
+    cert_report,
+    firmware,
 )
 
 
