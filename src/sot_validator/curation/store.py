@@ -14,6 +14,7 @@ import sqlite3
 from typing import Any, Optional
 import uuid
 
+from sot_validator.extraction.sql_export import open_read_only_sqlite
 from sot_validator.models import (
     Equipment,
     EquipmentCategory,
@@ -465,6 +466,18 @@ class CurationStore:
         self._conn = sqlite3.connect(conn_target)
         self._conn.row_factory = sqlite3.Row
         self._init_schema()
+
+    @classmethod
+    def open_read_only(cls, db_path: Path | str) -> CurationStore:
+        """Open an existing curation DB read-only: no schema creation, migration, or writes."""
+        path = Path(db_path)
+        if not path.is_file():
+            raise ValueError(f"curation database {str(path)!r} does not exist or is not a file")
+        store = cls.__new__(cls)
+        store.db_path = path
+        store._conn = open_read_only_sqlite(path)
+        store._conn.row_factory = sqlite3.Row
+        return store
 
     def _init_schema(self) -> None:
         with self._conn:
