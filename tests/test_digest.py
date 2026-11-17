@@ -84,17 +84,11 @@ def _counts(digest, category):
     return c.new, c.resolved, c.persisting
 
 
-# ---------------------------------------------------------------------------
-# Builder maths
-# ---------------------------------------------------------------------------
-
-
 def test_builder_rejects_bad_arguments():
     run = DigestRunInput()
-    with pytest.raises(ValueError):
-        DigestBuilder({}, run)
-    with pytest.raises(ValueError):
-        DigestBuilder(run, None)
+    for previous, current in (({}, run), (run, None)):
+        with pytest.raises(ValueError):
+            DigestBuilder(previous, current)
     for bad in (0, -1, True, 2.5, "3"):
         with pytest.raises(ValueError):
             DigestBuilder(run, run, top_n=bad)
@@ -166,8 +160,8 @@ def test_certificate_sort_days_ascending_none_last():
     digest = _build(DigestRunInput(certificate_findings=[]), current)
     ips = [item.key.split("/")[1] for item in digest.category(CATEGORY_CERTIFICATES_30D).top_new]
     assert ips == ["10.0.0.6", "10.0.0.7", "10.0.0.8", "10.0.0.9"]
-    last = digest.category(CATEGORY_CERTIFICATES_30D).top_new[-1].summary
-    assert last == "s1 10.0.0.9:443 - expires within 30 days"
+    last = digest.category(CATEGORY_CERTIFICATES_30D).top_new[-1]
+    assert last.summary == "s1 10.0.0.9:443 - expires within 30 days"
 
 
 def test_health_rule_only_degrading_counts_and_largest_drop_first():
@@ -273,14 +267,8 @@ def test_top_n_cut_and_more_line():
 def test_to_dict_is_json_serialisable():
     previous, current = _mixed_runs()
     data = _build(previous, current).to_dict()
-    assert json.loads(json.dumps(data)) == data
+    assert json.loads(json.dumps(data)) == data and data["is_empty"] is False
     assert [c["category"] for c in data["categories"]] == list(DIGEST_CATEGORIES)
-    assert data["is_empty"] is False
-
-
-# ---------------------------------------------------------------------------
-# Renderers
-# ---------------------------------------------------------------------------
 
 
 def test_text_has_header_and_counts_lines():
@@ -330,20 +318,17 @@ def test_text_one_very_long_value_is_clipped_without_truncation():
 
 
 def test_text_custom_max_chars_and_validation():
-    previous, current = _mixed_runs()
-    digest = _build(previous, current)
+    digest = _build(*_mixed_runs())
     text = render_digest_text(digest, max_chars=600)
     assert len(text) <= 600 and "truncated to 600 characters" in text
-    for bad in (0, -5, True, "4000"):
+    for bad in (0, -5, True, "4000", 50):
         with pytest.raises(ValueError):
             render_digest_text(digest, max_chars=bad)
-    with pytest.raises(ValueError):
-        render_digest_text(digest, max_chars=50)
 
 
 def test_summaries_are_single_line():
     run = DigestRunInput(quality_findings=[_quality("q1", message="line1\nline2\r\x00end")])
-    digest = _build(DigestRunInput(quality_findings=[]), run)
+    digest = _build(_all_empty_run(), run)
     summary = digest.category(CATEGORY_QUALITY_ERRORS).top_new[0].summary
     assert summary == "s1 duplicate_ip: line1 line2 end"
 
@@ -370,14 +355,13 @@ def test_empty_digest_renders_one_line_and_send_policy():
 
 def test_resolved_only_changes_are_empty():
     digest = _build(DigestRunInput(drift_events=[_drift("e1")]), DigestRunInput(drift_events=[]))
-    assert digest.category(CATEGORY_DRIFT).resolved == 1
-    assert digest.is_empty and not digest.should_send()
+    assert digest.category(CATEGORY_DRIFT).resolved == 1 and digest.is_empty
+    assert not digest.should_send()
     assert "no changes" in render_digest_text(digest)
 
 
 def test_non_empty_digest_should_send_on_change():
-    digest = _build(DigestRunInput(drift_events=[]), DigestRunInput(drift_events=[_drift("e1")]))
-    assert digest.should_send("on_change") is True
+    assert _nonempty_digest().should_send("on_change") is True
 
 
 def test_markdown_escapes_pipe_and_has_counts_table():
@@ -391,17 +375,14 @@ def test_markdown_escapes_pipe_and_has_counts_table():
 
 
 def test_html_escapes_hostile_values():
-    hostile_site = "<script>alert(1)</script>"
-    hostile_msg = '"><img src=x onerror=1>'
+    hostile_site, hostile_msg = "<script>alert(1)</script>", '"><img src=x onerror=1>'
     run = DigestRunInput(
         quality_findings=[_quality("q1", site=hostile_site, message=hostile_msg)],
         drift_events=[_drift("e1", site=hostile_msg, summary=hostile_site)],
     )
-    empty = DigestRunInput(quality_findings=[], drift_events=[])
-    doc = render_digest_html(_build(empty, run))
+    doc = render_digest_html(_build(_all_empty_run(), run))
     assert "<script" not in doc.lower() and "<img" not in doc.lower()
-    assert "&lt;script&gt;" in doc
-    assert "&quot;&gt;&lt;img src=x onerror=1&gt;" in doc
+    assert "&lt;script&gt;" in doc and "&quot;&gt;&lt;img src=x onerror=1&gt;" in doc
 
 
 def test_html_benign_contains_no_forbidden_strings():
@@ -436,11 +417,6 @@ def test_no_import_cycle_in_fresh_interpreter():
             env={**os.environ, "PYTHONPATH": str(SRC)}, capture_output=True, text=True, check=True,
         )
         assert out.stdout.strip() == "DigestBuilder render_digest_text"
-
-
-# ---------------------------------------------------------------------------
-# SMTP sink
-# ---------------------------------------------------------------------------
 
 
 class _StubSmtpHandler(socketserver.StreamRequestHandler):
@@ -672,7 +648,7 @@ def test_smtp_missing_env_var_fails_without_connecting(smtp_stub, monkeypatch):
 
 
 def test_smtp_password_never_in_repr_or_result(monkeypatch, caplog):
-    password = "pa55\nword-Secret"
+    password = "pa55word-Secret"
     monkeypatch.setenv("DIGEST_SMTP_USER", "mailer")
     monkeypatch.setenv("DIGEST_SMTP_PASS", password)
     # Nothing listens on port 1, so the connection is refused.
@@ -683,6 +659,36 @@ def test_smtp_password_never_in_repr_or_result(monkeypatch, caplog):
         result = sink.send(_nonempty_digest())
     assert result.status == "failed"
     assert "pa55" not in _all_fields(result) and "pa55" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "user, password",
+    [("mailer", "s\u00e9cretp\u00e4ss"), ("m\u00e4iler", "s3cret"), ("mailer", "pa55\nword"),
+     ("mail er", "s3cret"), ("mailer", "s3cret\x07")],
+)
+def test_smtp_unsendable_credentials_fail_before_connecting(
+    smtp_stub, monkeypatch, caplog, user, password
+):
+    monkeypatch.setenv("DIGEST_SMTP_USER", user)
+    monkeypatch.setenv("DIGEST_SMTP_PASS", password)
+    server = smtp_stub()
+    with caplog.at_level(logging.WARNING):
+        result = _sink(server.server_address[1]).send(_nonempty_digest())
+    assert result.status == "failed" and "cannot send" in result.detail
+    assert server.connections == 0 and server.auth == []
+    for secret in (user, password, "\u00e9", "\u00e4", "\\xe9", "\\xe4", "position"):
+        if secret != "mailer":
+            assert secret not in _all_fields(result) and secret not in caplog.text
+
+
+def test_smtp_unicode_error_detail_is_class_name_only(fake_smtp, monkeypatch, caplog):
+    monkeypatch.setenv("DIGEST_SMTP_USER", "mailer")
+    monkeypatch.setenv("DIGEST_SMTP_PASS", "s3cret")
+    fake_smtp.login_error = UnicodeEncodeError("ascii", "s\u00e9cret", 1, 2, "ordinal not in range")
+    with caplog.at_level(logging.WARNING):
+        result = _sink(2525, host="localhost").send(_nonempty_digest())
+    assert result.status == "failed" and result.detail == "UnicodeEncodeError"
+    assert "\\xe9" not in caplog.text and "position" not in caplog.text
 
 
 def test_smtp_auth_error_echoing_credentials_is_redacted(fake_smtp, monkeypatch, caplog):
@@ -708,11 +714,6 @@ def test_smtp_starttls_before_login_and_send(fake_smtp, monkeypatch):
         ("connect", "mail.example.com", 587, 7.0), ("ehlo",), ("starttls", "SSLContext"),
         ("ehlo",), ("login",), ("send",),
     ]
-
-
-# ---------------------------------------------------------------------------
-# Webhook sink
-# ---------------------------------------------------------------------------
 
 
 SECRET_URL = "https://hookuser:hookpass@hooks.example.test:8443/services/T0K3N?token=q5ecret"

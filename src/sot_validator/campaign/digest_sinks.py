@@ -221,6 +221,16 @@ class SmtpDigestSink(DigestSink):
             value = os.environ.get(env_name)
             if not value:
                 return None, None, f"environment variable {env_name} is not set or empty"
+            # smtplib ASCII-encodes AUTH, and its UnicodeEncodeError names a secret character.
+            unsafe = (
+                _has_unsafe_chars(value)
+                if env_name == self.username_env
+                else not value.isprintable()
+            )
+            if not value.isascii() or unsafe:
+                return None, None, (
+                    f"environment variable {env_name} contains characters SMTP AUTH cannot send"
+                )
             values.append(value)
         return values[0], values[1], None
 
@@ -242,6 +252,9 @@ class SmtpDigestSink(DigestSink):
                 if username is not None and password is not None:
                     client.login(username, password)
                 client.send_message(message)
+        except UnicodeError as exc:
+            # Encoding errors quote the offending character and its position: name only.
+            return self._result(self.destination, type(exc).__name__)
         except Exception as exc:  # noqa: BLE001 - delivery failures become results
             detail = _redact(
                 f"{type(exc).__name__}: {exc}", _smtp_secret_forms(username, password)
