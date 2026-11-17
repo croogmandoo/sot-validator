@@ -22,6 +22,7 @@ URL_RE = re.compile(r"(http://127\.0\.0\.1:(\d+)/)#token=(\S+)")
 def _run_in_tmp_path(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     # `serve` without --snapshot writes default fixture snapshots to ./output.
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SOT_WORKBENCH_TOKEN", raising=False)
 
 
 def test_serve_prints_token_url_once_and_supplied_token_verbatim(
@@ -169,3 +170,274 @@ def test_printed_token_url_authenticates_writes(
             server.shutdown()
         thread.join(timeout=5)
     assert result == [0]
+
+
+def _serve_once(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
+    rc = main(["serve", "--host", "127.0.0.1", "--port", "0", *argv])
+    out, err = capsys.readouterr()
+    return rc, out, err
+
+
+def _printed_token(out: str) -> str:
+    matches = URL_RE.findall(out)
+    assert len(matches) == 1
+    return matches[0][2]
+
+
+def test_serve_token_file_token_is_printed_and_authenticates_writes(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.txt"
+    token_file.write_text("file-tok\n", encoding="utf-8")
+    rc, out, err = _serve_once(["--token-file", str(token_file), "--once"], capsys)
+    assert rc == 0
+    assert _printed_token(out) == "file-tok"
+    assert "file-tok" not in err
+
+    servers: list[Any] = []
+    real_create = cli_workbench.create_workbench_server
+
+    def _capture(*args: Any, **kwargs: Any) -> Any:
+        server = real_create(*args, **kwargs)
+        servers.append(server)
+        return server
+
+    monkeypatch.setattr(cli_workbench, "create_workbench_server", _capture)
+    result: list[int] = []
+    thread = threading.Thread(
+        target=lambda: result.append(
+            main(["serve", "--host", "127.0.0.1", "--port", "0", "--token-file", str(token_file)])
+        ),
+        daemon=True,
+    )
+    thread.start()
+    try:
+        match = None
+        for _ in range(100):
+            match = URL_RE.search(capsys.readouterr().out)
+            if match:
+                break
+            thread.join(timeout=0.05)
+        assert match is not None
+        base_url, token = match.group(1).rstrip("/"), match.group(3)
+        assert token == "file-tok"
+        state = json.loads(urlopen(f"{base_url}/api/state", timeout=5).read())
+        device_id = state["site"]["devices"][0]["device_id"]
+        req = Request(
+            f"{base_url}/api/items/patch",
+            data=json.dumps(
+                {"target_type": "NetworkDevice", "target_id": device_id, "room": "MDF-FILE"}
+            ).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Origin": base_url,
+                "Authorization": f"Bearer {token}",
+            },
+            method="POST",
+        )
+        with urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+    finally:
+        for server in servers:
+            server.shutdown()
+        thread.join(timeout=5)
+    assert result == [0]
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [("crlf-tok\r\n", "crlf-tok"), ("bare-tok", "bare-tok")],
+)
+def test_serve_token_file_drops_only_one_trailing_newline(
+    content: str, expected: str, tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.txt"
+    token_file.write_bytes(content.encode("utf-8"))
+    rc, out, _ = _serve_once(["--token-file", str(token_file), "--once"], capsys)
+    assert rc == 0
+    assert _printed_token(out) == expected
+
+
+def test_serve_token_file_with_two_newlines_is_rejected(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.txt"
+    token_file.write_text("two-nl-tok\n\n", encoding="utf-8")
+    rc, out, err = _serve_once(["--token-file", str(token_file), "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --token-file rejected")
+    assert "two-nl-tok" not in out + err
+
+
+def test_serve_env_token_and_precedence(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("SOT_WORKBENCH_TOKEN", "env-tok")
+    rc, out, err = _serve_once(["--once"], capsys)
+    assert rc == 0
+    assert _printed_token(out) == "env-tok"
+    assert "env-tok" not in err
+
+    rc, out, _ = _serve_once(["--token", "cli-tok", "--once"], capsys)
+    assert rc == 0
+    assert _printed_token(out) == "cli-tok"
+
+    token_file = tmp_path / "tok.txt"
+    token_file.write_text("file-tok\n", encoding="utf-8")
+    rc, out, _ = _serve_once(["--token-file", str(token_file), "--once"], capsys)
+    assert rc == 0
+    assert _printed_token(out) == "file-tok"
+
+
+def test_serve_empty_env_token_counts_as_unset(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("SOT_WORKBENCH_TOKEN", "")
+    rc, out, _ = _serve_once(["--once"], capsys)
+    assert rc == 0
+    assert len(_printed_token(out)) >= 32
+
+
+def test_serve_rejects_token_and_token_file_together(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.txt"
+    token_file.write_text("both-file-tok\n", encoding="utf-8")
+    rc, out, err = _serve_once(
+        ["--token", "both-cli-tok", "--token-file", str(token_file), "--check"], capsys
+    )
+    assert rc == 2
+    assert err.startswith("error:")
+    assert len(err.strip().splitlines()) == 1
+    assert "--token-file" in err
+    assert "both-cli-tok" not in out + err
+    assert "both-file-tok" not in out + err
+
+
+def test_serve_missing_token_file_reports_cleanly(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc, _, err = _serve_once(["--token-file", str(tmp_path / "absent.txt"), "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --token-file")
+    assert len(err.strip().splitlines()) == 1
+    assert "Traceback" not in err
+
+
+def test_serve_non_utf8_token_file_reports_cleanly(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.bin"
+    token_file.write_bytes(b"\xff\xfesecret\n")
+    rc, out, err = _serve_once(["--token-file", str(token_file), "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --token-file")
+    assert "secret" not in out + err
+    assert "Traceback" not in err
+
+
+def test_serve_token_file_directory_reports_cleanly(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc, _, err = _serve_once(["--token-file", str(tmp_path), "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --token-file")
+    assert "Traceback" not in err
+
+
+def test_serve_bad_token_file_contents_are_not_echoed(
+    tmp_path: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    token_file = tmp_path / "tok.txt"
+    token_file.write_text("has space\n", encoding="utf-8")
+    rc, out, err = _serve_once(["--token-file", str(token_file), "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --token-file rejected")
+    assert "has space" not in out + err
+    assert "Traceback" not in err
+
+
+@pytest.mark.parametrize("bad_token", ["bad tok", "trail\n", "ctl\x01x"])
+def test_serve_bad_env_token_is_not_echoed(
+    bad_token: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("SOT_WORKBENCH_TOKEN", bad_token)
+    rc, out, err = _serve_once(["--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: SOT_WORKBENCH_TOKEN rejected")
+    assert bad_token not in out + err
+
+
+def test_serve_quiet_token_omits_token_from_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    rc, out, err = _serve_once(["--token", "q-tok", "--quiet-token", "--once"], capsys)
+    assert rc == 0
+    assert "Workbench listening; open http://127.0.0.1:" in out
+    assert "#token=" not in out
+    assert "q-tok" not in out + err
+
+
+def test_serve_quiet_token_accepts_env_token(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("SOT_WORKBENCH_TOKEN", "q-env-tok")
+    rc, out, err = _serve_once(["--quiet-token", "--once"], capsys)
+    assert rc == 0
+    assert "#token=" not in out
+    assert "q-env-tok" not in out + err
+
+
+@pytest.mark.parametrize("env_value", [None, ""])
+def test_serve_quiet_token_requires_supplied_token(
+    env_value: str | None, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if env_value is not None:
+        monkeypatch.setenv("SOT_WORKBENCH_TOKEN", env_value)
+    rc, out, err = _serve_once(["--quiet-token", "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error:")
+    assert len(err.strip().splitlines()) == 1
+    assert "#token=" not in out
+
+
+def test_serve_rejects_empty_allowed_host(capsys: pytest.CaptureFixture[str]) -> None:
+    rc, _, err = _serve_once(["--allowed-host", "", "--check"], capsys)
+    assert rc == 2
+    assert err.startswith("error: --allowed-host rejected")
+
+
+def test_serve_passes_allowed_hosts_to_security_config(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seen: list[Any] = []
+    real_create = cli_workbench.create_workbench_server
+
+    def _capture(*args: Any, **kwargs: Any) -> Any:
+        server = real_create(*args, **kwargs)
+        seen.append(server)
+        return server
+
+    monkeypatch.setattr(cli_workbench, "create_workbench_server", _capture)
+    rc, _, _ = _serve_once(
+        ["--allowed-host", "WB.Example", "--allowed-host", "[fd00::5]", "--check"], capsys
+    )
+    assert rc == 0
+    assert seen[0].security.allowed_hosts == ("wb.example", "fd00::5")
+    assert {"wb.example", "fd00::5", "localhost"} <= seen[0].allowed_hosts
+
+
+def test_serve_other_value_error_is_not_reported_as_bind_refusal(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def _boom(*args: Any, **kwargs: Any) -> Any:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(cli_workbench, "create_workbench_server", _boom)
+    rc, _, err = _serve_once(["--token", "boom-tok", "--check"], capsys)
+    assert rc == 2
+    assert len(err.strip().splitlines()) == 1
+    assert "boom" in err
+    assert "refusing to bind" not in err
+    assert "--allow-remote" not in err
+    assert "boom-tok" not in err

@@ -3,9 +3,17 @@
 ``configure_logging`` installs a single handler on the ``sot_validator`` logger
 (never the root logger). Records carry the current ``run_id`` / ``site_id`` from
 ``contextvars`` and every ``extra`` field, with values under secret-looking keys
-(``password``, ``secret``, ``token``, ``community``, ``authorization``; matched
-case-insensitively as substrings) replaced by ``REDACTION_MASK``. Message text
-and positional args are not scanned.
+(``password``, ``secret``, ``token``, ``community``, ``authorization``,
+``api_key``, ``apikey``, ``passwd``, ``credential``, ``private_key``, ``cookie``,
+``session``, ``bearer``; matched case-insensitively as substrings after ``-`` is
+normalised to ``_``) replaced by ``REDACTION_MASK``. Dataclass instances and
+namedtuples are redacted by field name and rendered as dicts; ``repr=False``
+dataclass fields are always masked, and a dataclass without the generated
+``__repr__`` (for example ``config.SecretValue``) is masked whole. Other
+arbitrary objects are not inspected and are still stringified with ``str()`` by the
+formatters, so their ``__str__`` / ``__repr__`` can still expose secrets. Message
+text and positional args are not scanned. Text output escapes CR and LF so each
+record without ``exc_info`` is exactly one line.
 
 Example::
 
@@ -26,11 +34,13 @@ context, so ``run_id`` / ``site_id`` are ``None`` there. Wrap the callable with
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 import contextvars
+import dataclasses
 from datetime import datetime, timezone
 import functools
+import inspect
 import json
 import logging
 import math
@@ -46,6 +56,14 @@ SENSITIVE_KEY_FRAGMENTS: tuple[str, ...] = (
     "token",
     "community",
     "authorization",
+    "api_key",
+    "apikey",
+    "passwd",
+    "credential",
+    "private_key",
+    "cookie",
+    "session",
+    "bearer",
 )
 VALID_FORMATS: tuple[str, ...] = ("text", "json")
 
@@ -71,9 +89,10 @@ _T = TypeVar("_T")
 def is_sensitive_key(key: Any) -> bool:
     """Return True when ``key`` contains a secret-looking fragment, case-insensitively.
 
-    Matching is by substring, so keys such as ``tokens_count`` are masked too.
+    Matching is by substring after ``-`` is replaced with ``_``, so ``X-Api-Key``
+    matches ``api_key`` and keys such as ``tokens_count`` are masked too.
     """
-    lowered = str(key).lower()
+    lowered = str(key).lower().replace("-", "_")
     return any(fragment in lowered for fragment in SENSITIVE_KEY_FRAGMENTS)
 
 
@@ -81,23 +100,57 @@ def redact(value: Any) -> Any:
     """Return a redacted copy of ``value``; the input object is never mutated.
 
     Dict values under sensitive keys become ``REDACTION_MASK``; dicts, lists and
-    tuples are walked at any depth. A container that contains itself is replaced
-    by ``CYCLE_MARKER`` where it recurs. Other values are returned unchanged.
+    tuples are walked at any depth. Dataclass instances and namedtuples are
+    redacted by field name and returned as plain dicts. Dataclass fields declared
+    ``repr=False`` are masked whatever their name, and a dataclass instance whose
+    class turned off or replaced the generated ``__repr__`` (such as
+    ``config.SecretValue``) is replaced by ``REDACTION_MASK``. A container that
+    contains itself is replaced by ``CYCLE_MARKER`` where it recurs. Other values,
+    including dataclass classes and arbitrary objects, are returned unchanged and
+    are later stringified with ``str()``, which may still expose secrets.
     """
     return _redact(value, frozenset())
 
 
+def _is_namedtuple(value: Any) -> bool:
+    fields = getattr(type(value), "_fields", None)
+    return isinstance(value, tuple) and isinstance(fields, tuple)
+
+
+def _has_generated_repr(value: Any) -> bool:
+    if not type(value).__dataclass_params__.repr:
+        return False
+    generated = inspect.unwrap(type(value).__repr__)
+    return getattr(generated, "__qualname__", "").startswith("__create_fn__.<locals>.")
+
+
+def _redact_items(items: Iterable[tuple[Any, Any]], inner: frozenset[int]) -> dict[Any, Any]:
+    return {
+        key: REDACTION_MASK if is_sensitive_key(key) else _redact(item, inner)
+        for key, item in items
+    }
+
+
 def _redact(value: Any, path: frozenset[int]) -> Any:
-    if not isinstance(value, (Mapping, list, tuple)):
+    is_dataclass = dataclasses.is_dataclass(value) and not isinstance(value, type)
+    if not is_dataclass and not isinstance(value, (Mapping, list, tuple)):
         return value
     if id(value) in path:
         return CYCLE_MARKER
     inner = path | {id(value)}
-    if isinstance(value, Mapping):
+    if is_dataclass:
+        if not _has_generated_repr(value):
+            return REDACTION_MASK
         return {
-            key: REDACTION_MASK if is_sensitive_key(key) else _redact(item, inner)
-            for key, item in value.items()
+            field.name: REDACTION_MASK
+            if not field.repr or is_sensitive_key(field.name)
+            else _redact(getattr(value, field.name), inner)
+            for field in dataclasses.fields(value)
         }
+    if isinstance(value, Mapping):
+        return _redact_items(value.items(), inner)
+    if _is_namedtuple(value):
+        return _redact_items(zip(value._fields, value), inner)
     if isinstance(value, list):
         return [_redact(item, inner) for item in value]
     return tuple(_redact(item, inner) for item in value)
@@ -174,7 +227,9 @@ class JsonFormatter(logging.Formatter):
 class TextFormatter(logging.Formatter):
     """Format each record as a human-readable line with ``key=value`` extras appended.
 
-    Extras are redacted here as well, like ``JsonFormatter``.
+    Extras are redacted here as well, like ``JsonFormatter``. CR and LF in the line
+    are escaped as ``\\r`` / ``\\n`` so it cannot be split; an ``exc_info``
+    traceback is appended unescaped on the following lines.
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -189,7 +244,7 @@ class TextFormatter(logging.Formatter):
         for key, value in _extra_fields(record).items():
             rendered = json.dumps(_json_safe(redact({key: value})[key]), default=str)
             parts.append(f"{key}={rendered}")
-        line = " ".join(parts)
+        line = " ".join(parts).replace("\r", "\\r").replace("\n", "\\n")
         if record.exc_info:
             line = f"{line}\n{self.formatException(record.exc_info)}"
         return line

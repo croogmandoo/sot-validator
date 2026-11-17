@@ -1,5 +1,6 @@
-usage: sot-validator serve [-h] [--host HOST] [--port PORT] [--token TOKEN] [--allow-remote]
-                           [--snapshot SNAPSHOT] [--snapshot-dir SNAPSHOT_DIR]
+usage: sot-validator serve [-h] [--host HOST] [--port PORT] [--token TOKEN]
+                           [--token-file TOKEN_FILE] [--quiet-token] [--allowed-host NAME]
+                           [--allow-remote] [--snapshot SNAPSHOT] [--snapshot-dir SNAPSHOT_DIR]
                            [--curation-db CURATION_DB] [--results-file RESULTS_FILE]
                            [--site-id SITE_ID] [--once] [--check]
                            [--site-ids SITE_IDS [SITE_IDS ...]] [--all-sites]
@@ -12,8 +13,14 @@ options:
   -h, --help            show this help message and exit
   --host HOST           Bind address for the Workbench HTTP server (default: 127.0.0.1).
   --port PORT           TCP port for the Workbench HTTP server (default: 5100).
-  --token TOKEN         Bearer token for workbench writes (default: a fresh random token per
-                        start).
+  --token TOKEN         Bearer token for workbench writes (default: $SOT_WORKBENCH_TOKEN, else a
+                        fresh random token per start).
+  --token-file TOKEN_FILE
+                        Read the bearer token from this UTF-8 file (one trailing newline is
+                        dropped).
+  --quiet-token         Print the start-up URL without #token= (requires a supplied token).
+  --allowed-host NAME   Extra Host header name to accept besides loopback and the bound host
+                        (repeatable).
   --allow-remote        Allow binding --host to a non-loopback address (writes still need the
                         token).
   --snapshot, --snapshot-file SNAPSHOT

@@ -16,6 +16,7 @@ import pytest
 
 from sot_validator.models import NetworkDevice, Site
 from sot_validator.workbench import (
+    WorkbenchBindRefusedError,
     WorkbenchSecurityConfig,
     WorkbenchServer,
     WorkbenchState,
@@ -547,3 +548,188 @@ def test_ui_auth_banners_distinguish_missing_token_wrong_token_and_cross_origin(
     assert "Workbench token rejected: check the token" in page
     assert "Write rejected as cross-origin" in page
     assert "Request too large" in page
+
+
+def _raw_exchange(host: str, port: int, request: bytes) -> tuple[bytes, bytes]:
+    response = b""
+    with socket.create_connection((host, port), timeout=5.0) as sock:
+        sock.sendall(request)
+        sock.settimeout(5.0)
+        while True:
+            try:
+                chunk = sock.recv(4096)
+            except socket.timeout:  # pragma: no cover - failure diagnostic
+                pytest.fail("server did not answer the raw request")
+            if not chunk:
+                break
+            response += chunk
+    head, _, body = response.partition(b"\r\n\r\n")
+    return head, body
+
+
+def _assert_host_rejected(status: int, raw: bytes) -> None:
+    assert status == 403
+    assert json.loads(raw.decode("utf-8")) == {
+        "status": "error",
+        "error": "Host not allowed",
+    }
+
+
+@pytest.mark.parametrize(
+    "host_header", ["127.0.0.1:{port}", "localhost:{port}", "LOCALHOST", "[::1]:{port}"]
+)
+def test_loopback_host_headers_are_allowed(host_header: str) -> None:
+    with _live() as (base_url, server, _state):
+        port = server.server_address[1]
+        status, _headers, _raw = _http(
+            "GET",
+            f"{base_url}/api/health",
+            headers={"Host": host_header.format(port=port)},
+        )
+        assert status == 200
+
+
+@pytest.mark.parametrize("path", ["/api/health", "/", "/api/state", "/api/audit-log"])
+def test_foreign_host_header_is_rejected_on_get(path: str) -> None:
+    with _live() as (base_url, server, _state):
+        port = server.server_address[1]
+        status, headers, raw = _http(
+            "GET", f"{base_url}{path}", headers={"Host": f"evil.example:{port}"}
+        )
+        _assert_host_rejected(status, raw)
+        _assert_hardening_headers(headers)
+        assert headers.get("Connection") == "close"
+
+
+@pytest.mark.parametrize(
+    "host_lines",
+    [
+        "",
+        "Host: \r\n",
+        "Host: 127.0.0.1:{port}\r\nHost: 127.0.0.1:{port}\r\n",
+        "Host: 127.0.0.1:{port}\r\nHost: evil.example\r\n",
+        "Host: [::1\r\n",
+        "Host: [::1]x\r\n",
+        "Host: :{port}\r\n",
+    ],
+)
+def test_missing_empty_duplicate_or_malformed_host_is_rejected(host_lines: str) -> None:
+    with _live() as (_base_url, server, _state):
+        host, port = server.server_address[:2]
+        request = (
+            "GET /api/health HTTP/1.1\r\n" + host_lines.format(port=port) + "\r\n"
+        ).encode("ascii")
+        head, body = _raw_exchange(host, port, request)
+        assert b" 403 " in head.split(b"\r\n")[0]
+        assert b"X-Frame-Options: DENY" in head
+        assert json.loads(body.decode("utf-8"))["error"] == "Host not allowed"
+
+
+@pytest.mark.parametrize("path", ["/api/items/patch", "/api/curation/apply"])
+def test_foreign_host_post_is_rejected_before_auth_and_body(path: str) -> None:
+    with _live() as (base_url, server, state):
+        audit_before = state.store.list_audit_log(limit=1000)
+        headers = _write_headers(base_url)
+        headers["Host"] = "evil.example"
+        status, _headers, raw = _http(
+            "POST", f"{base_url}{path}", raw_body=b"{not json", headers=headers
+        )
+        _assert_host_rejected(status, raw)
+
+        unauth = {"Content-Type": "application/json", "Host": "evil.example"}
+        status, _headers, raw = _http(
+            "POST", f"{base_url}{path}", payload=_patch_payload(), headers=unauth
+        )
+        _assert_host_rejected(status, raw)
+
+        assert state.store.list_audit_log(limit=1000) == audit_before
+        assert state.get_state_payload()["patches"] == []
+
+
+def test_foreign_host_post_with_unread_body_closes_connection() -> None:
+    with _live() as (base_url, server, state):
+        host, port = server.server_address[:2]
+        body = json.dumps(_patch_payload())
+        request = (
+            "POST /api/items/patch HTTP/1.1\r\n"
+            "Host: evil.example\r\n"
+            f"Authorization: Bearer {SECURITY_TEST_TOKEN}\r\n"
+            "Content-Type: application/json\r\n"
+            f"Content-Length: {len(body)}\r\n\r\n"
+        )
+        head, response_body = _raw_exchange(host, port, request.encode("ascii"))
+        assert b" 403 " in head.split(b"\r\n")[0]
+        assert b"Connection: close" in head
+        assert json.loads(response_body.decode("utf-8"))["error"] == "Host not allowed"
+        assert state.get_state_payload()["audit_log"] == []
+
+
+@pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE"])
+def test_foreign_host_unsupported_methods_are_rejected_first(method: str) -> None:
+    with _live() as (base_url, _server, _state):
+        headers = _write_headers(base_url)
+        headers["Host"] = "evil.example"
+        status, _headers, raw = _http(
+            method, f"{base_url}/api/items/patch", payload=_patch_payload(), headers=headers
+        )
+        _assert_host_rejected(status, raw)
+
+
+def test_allowed_hosts_are_normalised_and_accepted() -> None:
+    security = WorkbenchSecurityConfig(
+        token=SECURITY_TEST_TOKEN, allowed_hosts=("Workbench.Example", "[FD00::5]")
+    )
+    assert security.allowed_hosts == ("workbench.example", "fd00::5")
+    with _live(security) as (base_url, _server, _state):
+        for host_header in ("workbench.example:1234", "[fd00::5]:80"):
+            status, _headers, _raw = _http(
+                "GET", f"{base_url}/api/health", headers={"Host": host_header}
+            )
+            assert status == 200
+        status, _headers, raw = _http(
+            "GET", f"{base_url}/api/health", headers={"Host": "other.example"}
+        )
+        _assert_host_rejected(status, raw)
+
+
+def test_allowed_hosts_accepts_any_iterable() -> None:
+    security = WorkbenchSecurityConfig(token="t", allowed_hosts=["A.example"])  # type: ignore[arg-type]
+    assert security.allowed_hosts == ("a.example",)
+
+
+@pytest.mark.parametrize("bad", [("",), ("[]",), (None,), (5,), "name.example"])
+def test_allowed_hosts_rejects_empty_or_non_string_entries(bad: Any) -> None:
+    with pytest.raises(ValueError):
+        WorkbenchSecurityConfig(token="t", allowed_hosts=bad)
+
+
+def test_effective_allowlist_includes_bound_host() -> None:
+    state = WorkbenchState(_sample_site())
+    server = create_workbench_server(
+        state,
+        host="0.0.0.0",
+        port=0,
+        security=WorkbenchSecurityConfig(
+            token="t", allow_remote=True, allowed_hosts=("wb.example",)
+        ),
+    )
+    try:
+        assert server.allowed_hosts == frozenset(
+            {"localhost", "127.0.0.1", "::1", "0.0.0.0", "wb.example"}
+        )
+    finally:
+        server.server_close()
+
+
+def test_non_loopback_refusal_raises_bind_refused_error() -> None:
+    state = WorkbenchState(_sample_site())
+    with pytest.raises(WorkbenchBindRefusedError) as excinfo:
+        create_workbench_server(state, host="10.9.1.2", port=0)
+    assert isinstance(excinfo.value, ValueError)
+    assert "Refusing to bind" in str(excinfo.value)
+
+
+def test_bad_state_is_not_a_bind_refusal() -> None:
+    with pytest.raises(ValueError) as excinfo:
+        create_workbench_server("not-state", host="127.0.0.1", port=0)  # type: ignore[arg-type]
+    assert not isinstance(excinfo.value, WorkbenchBindRefusedError)
