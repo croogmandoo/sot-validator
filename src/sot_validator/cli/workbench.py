@@ -13,6 +13,7 @@ from urllib.request import urlopen
 
 from sot_validator.cli._common import (
     _add_source_arguments,
+    _build_workbench_security,
     _load_single_site_snapshot,
     _load_validation_results_file,
     _open_curation_store,
@@ -28,7 +29,7 @@ from sot_validator.models import (
 )
 from sot_validator.topology import DevicePortManager, DeviceTypeCatalog
 from sot_validator.workbench import (
-    WorkbenchSecurityConfig,
+    WorkbenchBindRefusedError,
     WorkbenchState,
     create_workbench_server,
     render_workbench_html,
@@ -45,13 +46,11 @@ def _workbench_url(server_address: Sequence[Any]) -> str:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     try:
-        security = WorkbenchSecurityConfig(
-            token=getattr(args, "token", None),
-            allow_remote=bool(getattr(args, "allow_remote", False)),
-        )
+        security = _build_workbench_security(args)
     except ValueError as exc:
-        print(f"error: --token rejected: {exc}", file=sys.stderr)
+        print(f"error: {exc}", file=sys.stderr)
         return 2
+    quiet_token = bool(getattr(args, "quiet_token", False))
 
     site = _load_single_site_snapshot(
         getattr(args, "snapshot", None), args, default_to_fixtures=True
@@ -74,13 +73,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
             server = create_workbench_server(
                 state, host=args.host, port=int(args.port), security=security
             )
-        except ValueError:
-            # The only ValueError here is the non-loopback bind refusal.
+        except WorkbenchBindRefusedError:
             print(
                 f"error: refusing to bind the workbench to non-loopback host "
                 f"{args.host!r}; pass --allow-remote to expose it on the network",
                 file=sys.stderr,
             )
+            return 2
+        except ValueError as exc:
+            print(f"error: cannot start the workbench: {exc}", file=sys.stderr)
             return 2
         except (OSError, OverflowError) as exc:
             print(
@@ -95,11 +96,14 @@ def cmd_serve(args: argparse.Namespace) -> int:
                 _ = state.get_state_payload()
                 return 0
 
-            print(
-                f"Workbench listening; open {_workbench_url(server.server_address)}"
-                f"#token={security.token}",
-                flush=True,
-            )
+            url = _workbench_url(server.server_address)
+            if quiet_token:
+                print(f"Workbench listening; open {url}", flush=True)
+            else:
+                print(
+                    f"Workbench listening; open {url}#token={security.token}",
+                    flush=True,
+                )
 
             if getattr(args, "once", False):
                 bound_host, bound_port = server.server_address[:2]
@@ -447,7 +451,29 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--token",
         type=str,
         default=None,
-        help="Bearer token for workbench writes (default: a fresh random token per start).",
+        help="Bearer token for workbench writes (default: $SOT_WORKBENCH_TOKEN, else a fresh random token per start).",
+    )
+    serve_parser.add_argument(
+        "--token-file",
+        dest="token_file",
+        type=Path,
+        default=None,
+        help="Read the bearer token from this UTF-8 file (one trailing newline is dropped).",
+    )
+    serve_parser.add_argument(
+        "--quiet-token",
+        dest="quiet_token",
+        action="store_true",
+        default=False,
+        help="Print the start-up URL without #token= (requires a supplied token).",
+    )
+    serve_parser.add_argument(
+        "--allowed-host",
+        dest="allowed_hosts",
+        action="append",
+        default=None,
+        metavar="NAME",
+        help="Extra Host header name to accept besides loopback and the bound host (repeatable).",
     )
     serve_parser.add_argument(
         "--allow-remote",

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -28,10 +30,12 @@ from sot_validator.signals.directory_dns import (
 from sot_validator.signals.hypervisor import MultiVCenterInventoryProvider
 from sot_validator.signals.icmp import IcmpProbeCollector
 from sot_validator.signals.management import ManagementProbeCollector
+from sot_validator.workbench import WorkbenchSecurityConfig
 
 
 DEFAULT_FIXTURE_EVALUATION_TIME = "2026-02-12T12:00:00Z"
 DEFAULT_DISCOVERY_SAMPLE_EVALUATION_TIME = "2026-11-11T08:10:00Z"
+WORKBENCH_TOKEN_ENV_VAR = "SOT_WORKBENCH_TOKEN"
 
 
 def _parse_str_list(raw_values: Optional[Sequence[str]]) -> list[str]:
@@ -666,3 +670,70 @@ def _json_object_list(raw: Any, *, key: str, path: Path) -> list[Mapping[str, An
             raise ValueError(f"Expected JSON objects in {key!r} from {path}")
         objects.append(item)
     return objects
+
+
+def _read_token_file(path: Path) -> str:
+    """Read a token file as UTF-8, dropping exactly one trailing newline."""
+    text = path.read_text(encoding="utf-8")
+    if text.endswith("\r\n"):
+        return text[:-2]
+    if text.endswith("\n"):
+        return text[:-1]
+    return text
+
+
+def _resolve_workbench_token(args: argparse.Namespace) -> tuple[Optional[str], str]:
+    """Return `(token, source)` from `--token`, `--token-file` or the environment.
+
+    The token is `None` when none was supplied. Raises `ValueError` with a
+    one-line message that never contains the token value.
+    """
+    cli_token = getattr(args, "token", None)
+    token_file = getattr(args, "token_file", None)
+    if cli_token is not None and token_file is not None:
+        raise ValueError("--token and --token-file cannot be used together")
+    if cli_token is not None:
+        return cli_token, "--token"
+    if token_file is not None:
+        try:
+            return _read_token_file(Path(token_file)), "--token-file"
+        except UnicodeDecodeError:
+            raise ValueError(
+                f"--token-file {token_file}: file is not valid UTF-8"
+            ) from None
+        except OSError as exc:
+            raise ValueError(
+                f"--token-file {token_file}: "
+                f"{exc.strerror or exc.__class__.__name__}"
+            ) from None
+    env_token = os.environ.get(WORKBENCH_TOKEN_ENV_VAR)
+    if env_token:
+        return env_token, WORKBENCH_TOKEN_ENV_VAR
+    return None, "--token"
+
+
+def _build_workbench_security(args: argparse.Namespace) -> WorkbenchSecurityConfig:
+    """Build the `serve` security config from the token, quiet-token and host flags.
+
+    Raises `ValueError` with a one-line message naming the offending source;
+    the message never contains the token value.
+    """
+    token, token_source = _resolve_workbench_token(args)
+    if getattr(args, "quiet_token", False) and token is None:
+        raise ValueError(
+            "--quiet-token requires a supplied token "
+            f"(--token, --token-file or {WORKBENCH_TOKEN_ENV_VAR})"
+        )
+    try:
+        security = WorkbenchSecurityConfig(
+            token=token,
+            allow_remote=bool(getattr(args, "allow_remote", False)),
+        )
+    except ValueError as exc:
+        raise ValueError(f"{token_source} rejected: {exc}") from None
+    try:
+        return replace(
+            security, allowed_hosts=tuple(getattr(args, "allowed_hosts", None) or ())
+        )
+    except ValueError as exc:
+        raise ValueError(f"--allowed-host rejected: {exc}") from None

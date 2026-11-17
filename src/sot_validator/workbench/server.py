@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 import hmac
@@ -76,6 +76,7 @@ _SECURITY_RESPONSE_HEADERS: tuple[tuple[str, str], ...] = (
 )
 
 _LOOPBACK_HOSTNAMES = frozenset({"localhost"})
+_DEFAULT_ALLOWED_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
 def _is_loopback_host(host: str) -> bool:
@@ -99,6 +100,26 @@ def _is_valid_token(token: Any) -> bool:
     )
 
 
+def _normalize_host_name(name: str) -> str:
+    """Lowercase a host name and strip IPv6 literal brackets."""
+    return name.strip("[]").lower()
+
+
+def _host_header_name(value: str) -> Optional[str]:
+    """Return the host name from a `Host` header value, ignoring any port."""
+    if value.startswith("["):
+        closing = value.find("]")
+        if closing == -1:
+            return None
+        rest = value[closing + 1:]
+        if rest and not rest.startswith(":"):
+            return None
+        name = value[1:closing]
+    else:
+        name = value.partition(":")[0]
+    return name.lower() or None
+
+
 @dataclass
 class WorkbenchSecurityConfig:
     """Bearer-token, bind-scope and request-size policy for workbench writes."""
@@ -106,8 +127,22 @@ class WorkbenchSecurityConfig:
     token: Optional[str] = None
     allow_remote: bool = False
     max_body_bytes: int = _DEFAULT_MAX_BODY_BYTES
+    allowed_hosts: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        if isinstance(self.allowed_hosts, str) or not isinstance(
+            self.allowed_hosts, Iterable
+        ):
+            raise ValueError("allowed_hosts must be an iterable of host names")
+        normalized_hosts: list[str] = []
+        for name in self.allowed_hosts:
+            if not isinstance(name, str):
+                raise ValueError("allowed_hosts entries must be strings")
+            normalized = _normalize_host_name(name)
+            if not normalized:
+                raise ValueError("allowed_hosts entries must be non-empty host names")
+            normalized_hosts.append(normalized)
+        self.allowed_hosts = tuple(normalized_hosts)
         if (
             isinstance(self.max_body_bytes, bool)
             or not isinstance(self.max_body_bytes, int)
@@ -152,6 +187,10 @@ def _bulk_csv_fields(body: Mapping[str, Any]) -> tuple[str, Optional[str]]:
 
 class WorkbenchNotFoundError(KeyError):
     """Raised when a requested workbench resource (such as a device) does not exist."""
+
+
+class WorkbenchBindRefusedError(ValueError):
+    """Raised when the workbench refuses to bind to a non-loopback host."""
 
 
 class WorkbenchState:
@@ -1005,12 +1044,18 @@ class WorkbenchServer(ThreadingHTTPServer):
             raise ValueError("security must be a WorkbenchSecurityConfig instance")
         bind_host = server_address[0]
         if not security.allow_remote and not _is_loopback_host(bind_host):
-            raise ValueError(
+            raise WorkbenchBindRefusedError(
                 f"Refusing to bind the workbench to non-loopback host {bind_host!r}; "
                 "use WorkbenchSecurityConfig(allow_remote=True) to override"
             )
         self.state = state
         self._security = security
+        bound_name = _normalize_host_name(str(bind_host))
+        self._allowed_hosts = (
+            _DEFAULT_ALLOWED_HOSTS
+            | ({bound_name} if bound_name else set())
+            | set(security.allowed_hosts)
+        )
         handler_cls = RequestHandlerClass or WorkbenchRequestHandler
         super().__init__(server_address, handler_cls)
 
@@ -1018,6 +1063,11 @@ class WorkbenchServer(ThreadingHTTPServer):
     def security(self) -> WorkbenchSecurityConfig:
         """Bearer-token, bind-scope and body-size policy for this server."""
         return self._security
+
+    @property
+    def allowed_hosts(self) -> frozenset[str]:
+        """Effective `Host` header allowlist: loopback names, bound host, extras."""
+        return self._allowed_hosts
 
 
 class WorkbenchRequestHandler(BaseHTTPRequestHandler):
@@ -1123,6 +1173,19 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
             return True
         return length <= self.server.security.max_body_bytes
 
+    def _host_authorized(self) -> bool:
+        """Check `Host` against the allowlist; send a 403 and return False on failure."""
+        values = self.headers.get_all("Host") or []
+        name = _host_header_name(values[0].strip()) if len(values) == 1 else None
+        if name is not None and name in self.server.allowed_hosts:
+            return True
+        self._send_json(
+            403,
+            {"status": "error", "error": "Host not allowed"},
+            close_connection=True,
+        )
+        return False
+
     def _authorize_mutation(self) -> bool:
         """Run token, origin and body-size checks; send the rejection and return False on failure."""
         if not self._token_authorized():
@@ -1145,6 +1208,8 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
         return True
 
     def _reject_unsupported_mutation(self) -> None:
+        if not self._host_authorized():
+            return
         if not self._authorize_mutation():
             return
         self._send_json(
@@ -1154,6 +1219,8 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
         )
 
     def do_GET(self) -> None:
+        if not self._host_authorized():
+            return
         parsed_url = urlparse(self.path)
         route = parsed_url.path.rstrip("/") or "/"
         query = parse_qs(parsed_url.query)
@@ -1210,6 +1277,8 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"status": "error", "error": str(exc)})
 
     def do_POST(self) -> None:
+        if not self._host_authorized():
+            return
         if not self._authorize_mutation():
             return
 
@@ -1357,6 +1426,7 @@ def create_workbench_server(
 
 
 __all__ = [
+    "WorkbenchBindRefusedError",
     "WorkbenchNotFoundError",
     "WorkbenchRequestHandler",
     "WorkbenchSecurityConfig",
