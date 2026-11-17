@@ -1,0 +1,16 @@
+usage: sot-validator quality [-h] --snapshot SNAPSHOT [--rules RULES] [--disable DISABLE]
+                             [--output-json OUTPUT_JSON] [--output-md OUTPUT_MD]
+
+options:
+  -h, --help            show this help message and exit
+  --snapshot SNAPSHOT   Site JSON snapshot file or SnapshotStore directory (repeatable; two or
+                        more add the cross-site rules).
+  --rules RULES         Comma-separated rule names to run, all others disabled (repeatable).
+                        Rules: duplicate_ip, duplicate_mac, ip_outside_site_block,
+                        ip_outside_active_subnet, orphan_reference, hostname_mismatch,
+                        cross_site_duplicate_ip, cross_site_duplicate_mac.
+  --disable DISABLE     Comma-separated rule names to disable (repeatable).
+  --output-json OUTPUT_JSON
+                        Output path for the data-quality report JSON.
+  --output-md OUTPUT_MD
+                        Output path for the data-quality report Markdown.

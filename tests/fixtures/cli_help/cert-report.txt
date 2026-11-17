@@ -1,0 +1,23 @@
+usage: sot-validator cert-report [-h] --fingerprints FINGERPRINTS [--snapshot SNAPSHOT]
+                                 [--site-id SITE_ID] [--warn-days WARN_DAYS]
+                                 [--evaluation-time EVALUATION_TIME] [--output-json OUTPUT_JSON]
+                                 [--output-md OUTPUT_MD]
+
+options:
+  -h, --help            show this help message and exit
+  --fingerprints FINGERPRINTS
+                        RawServiceBanner JSON list or {"banners": [...]} with tls_certificates
+                        (the fingerprint --banners format).
+  --snapshot SNAPSHOT   Optional Site JSON snapshot file or SnapshotStore directory for site ID
+                        and SoT hostnames.
+  --site-id SITE_ID     Site ID to select from --snapshot, or to stamp on findings without one
+                        (default: unknown).
+  --warn-days WARN_DAYS
+                        Comma-separated positive expiry warning thresholds in days (default:
+                        90,60,30).
+  --evaluation-time EVALUATION_TIME
+                        Reference ISO-8601 timestamp (naive means UTC; default: now).
+  --output-json OUTPUT_JSON
+                        Output path for the certificate report JSON.
+  --output-md OUTPUT_MD
+                        Output path for the certificate report Markdown.

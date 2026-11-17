@@ -1,0 +1,19 @@
+usage: sot-validator firmware-check [-h] --snapshot SNAPSHOT --catalog CATALOG
+                                    [--snmp-fixture SNMP_FIXTURE]
+                                    [--evaluation-time EVALUATION_TIME]
+                                    [--output-json OUTPUT_JSON] [--output-md OUTPUT_MD]
+
+options:
+  -h, --help            show this help message and exit
+  --snapshot SNAPSHOT   Site JSON snapshot file or SnapshotStore directory (repeatable).
+  --catalog CATALOG     Lifecycle catalog JSON of firmware baselines and end-of-sale / end-of-
+                        support dates.
+  --snmp-fixture SNMP_FIXTURE
+                        Optional SNMP fixture JSON supplying sysDescr by IP; without it every
+                        device is unparsed.
+  --evaluation-time EVALUATION_TIME
+                        Reference ISO-8601 timestamp (naive means UTC; default: now).
+  --output-json OUTPUT_JSON
+                        Output path for the firmware report JSON.
+  --output-md OUTPUT_MD
+                        Output path for the firmware report Markdown.
