@@ -129,7 +129,7 @@ def _load_dhcp_expected(path: Path) -> list[str]:
             if not isinstance(item, str):
                 raise ValueError(f"Expected only strings in {path}, got {item!r}")
         return list(raw)
-    lines = (line.strip() for line in Path(path).read_text(encoding="utf-8").splitlines())
+    lines = (line.strip() for line in Path(path).read_text(encoding="utf-8-sig").splitlines())
     return [line for line in lines if line and not line.startswith("#")]
 
 

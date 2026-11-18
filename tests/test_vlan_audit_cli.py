@@ -244,6 +244,20 @@ def test_dhcp_expected_text_digits_are_not_json(
     assert "subnet_without_dhcp_scope" not in _rules(report)
 
 
+@pytest.mark.parametrize("bom", ["", "﻿"], ids=["plain", "bom"])
+def test_dhcp_expected_text_with_bom(
+    bom: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scopes = _write(tmp_path / "scopes.json", [{"cidr": "10.1.20.0/24"}])
+    for first_line in ("10.1.10.0/24", "# DHCP subnets\nsub-10"):
+        expected = _write(tmp_path / "expected.txt", f"{bom}{first_line}\n")
+        report = _report(
+            tmp_path, capsys, "--dhcp-scopes", str(scopes), "--dhcp-expected", str(expected)
+        )
+        missing = [f for f in report["findings"] if f["rule"] == "subnet_without_dhcp_scope"]
+        assert [f["record_ids"][1] for f in missing] == ["subnet:sub-10"]
+
+
 def _all_inputs(tmp_path: Path) -> list[str]:
     fdb = _write(
         tmp_path / "fdb.json",
