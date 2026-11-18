@@ -12,6 +12,9 @@ import pytest
 from sot_validator.config import (
     AppConfig,
     ConfigError,
+    DigestConfig,
+    DigestSmtpConfig,
+    DigestWebhookConfig,
     PolicyConfig,
     ProxmoxConfig,
     RetentionConfig,
@@ -677,3 +680,183 @@ def test_secret_with_control_characters_stays_redacted(tmp_path, monkeypatch):
     assert "line1" not in repr(cfg)
     assert "line1" not in json.dumps(cfg.to_dict())
     assert cfg.vcenters[0].password.reveal() == "line1\nline2\x07"
+
+
+# --- [digest] -----------------------------------------------------------------------------
+
+DIGEST = """
+[digest]
+policy = "always"
+
+[digest.smtp]
+host = "smtp.example.invalid"
+sender = "sot@example.invalid"
+recipients = ["ops@example.invalid", "noc@example.invalid"]
+username = "${env:DIGEST_USER}"
+password = "${env:DIGEST_PASS}"
+
+[[digest.webhooks]]
+name = "teams"
+url = "${env:DIGEST_HOOK_A}"
+
+[[digest.webhooks]]
+name = "ha"
+url = "${env:DIGEST_HOOK_B}"
+timeout_seconds = 2.5
+"""
+
+DIGEST_SMTP_MIN = """
+[digest.smtp]
+host = "smtp.example.invalid"
+sender = "sot@example.invalid"
+recipients = ["ops@example.invalid"]
+"""
+
+
+def test_digest_section_defaults_when_absent(tmp_path):
+    cfg = load_config(_write(tmp_path, SITE))
+    assert cfg.digest == DigestConfig()
+    assert cfg.digest.policy == "on_change"
+    assert cfg.digest.smtp is None
+    assert cfg.digest.webhooks == ()
+    assert cfg.to_dict()["digest"] == {"policy": "on_change", "smtp": None, "webhooks": []}
+
+
+def test_digest_section_loads_with_secret_vars_unset(tmp_path, monkeypatch):
+    for name in ("DIGEST_USER", "DIGEST_PASS", "DIGEST_HOOK_A", "DIGEST_HOOK_B"):
+        monkeypatch.delenv(name, raising=False)
+    cfg = load_config(_write(tmp_path, SITE + DIGEST))
+    assert cfg.digest.policy == "always"
+    smtp = cfg.digest.smtp
+    assert isinstance(smtp, DigestSmtpConfig)
+    assert smtp.port == 587
+    assert smtp.starttls is True
+    assert smtp.allow_insecure_localhost is False
+    assert smtp.timeout_seconds == 10.0
+    assert smtp.subject == "SoT weekly change digest"
+    assert smtp.recipients == ("ops@example.invalid", "noc@example.invalid")
+    assert isinstance(smtp.username, SecretValue) and smtp.username.variable == "DIGEST_USER"
+    assert isinstance(smtp.password, SecretValue) and smtp.password.variable == "DIGEST_PASS"
+    hooks = cfg.digest.webhooks
+    assert [hook.name for hook in hooks] == ["teams", "ha"]
+    assert all(isinstance(hook, DigestWebhookConfig) for hook in hooks)
+    assert isinstance(hooks[0].url, SecretValue)
+    assert hooks[0].url.variable == "DIGEST_HOOK_A"
+    assert hooks[0].url.table == "digest.webhooks[0]" and hooks[0].url.key == "url"
+    assert hooks[0].timeout_seconds == 10.0
+    assert hooks[1].timeout_seconds == 2.5
+    with pytest.raises(ConfigError) as excinfo:
+        hooks[1].url.reveal()
+    assert "[digest.webhooks[1]] url: environment variable DIGEST_HOOK_B" in str(excinfo.value)
+
+
+def test_digest_to_dict_redacts_secrets(tmp_path, monkeypatch):
+    monkeypatch.setenv("DIGEST_USER", "u-s3cr3t")
+    monkeypatch.setenv("DIGEST_PASS", "p-s3cr3t")
+    monkeypatch.setenv("DIGEST_HOOK_A", "https://hooks.example.invalid/x/s3cr3t?sig=s3cr3t")
+    cfg = load_config(_write(tmp_path, SITE + DIGEST))
+    dumped = json.dumps(cfg.to_dict())
+    assert "s3cr3t" not in dumped and "s3cr3t" not in repr(cfg)
+    digest = cfg.to_dict()["digest"]
+    assert digest["smtp"]["username"] == "***"
+    assert digest["smtp"]["password"] == "***"
+    assert [hook["url"] for hook in digest["webhooks"]] == ["***", "***"]
+
+
+def test_digest_smtp_explicit_values(tmp_path):
+    text = SITE + DIGEST_SMTP_MIN + (
+        "port = 2525\nstarttls = false\nallow_insecure_localhost = true\n"
+        'timeout_seconds = 3\nsubject = "Weekly"\n'
+    )
+    text = text.replace('"smtp.example.invalid"', '"127.0.0.1"')
+    smtp = load_config(_write(tmp_path, text)).digest.smtp
+    assert (smtp.port, smtp.starttls, smtp.allow_insecure_localhost) == (2525, False, True)
+    assert smtp.timeout_seconds == 3.0 and smtp.subject == "Weekly"
+    assert smtp.username is None and smtp.password is None
+
+
+@pytest.mark.parametrize("host", ["localhost", "127.0.0.1", "::1"])
+def test_digest_smtp_insecure_loopback_allowed(tmp_path, host):
+    text = SITE + DIGEST_SMTP_MIN.replace("smtp.example.invalid", host)
+    text += "starttls = false\nallow_insecure_localhost = true\n"
+    assert load_config(_write(tmp_path, text)).digest.smtp.starttls is False
+
+
+@pytest.mark.parametrize(
+    ("text", "table", "key"),
+    [
+        ('[digest]\nschedule = "weekly"\n', "digest", "schedule"),
+        ('[digest]\npolicy = "weekly"\n', "digest", "policy"),
+        ("[digest]\npolicy = true\n", "digest", "policy"),
+        ("[digest]\nsmtp = 1\n", "digest", "smtp"),
+        ('[digest]\nwebhooks = "x"\n', "digest", "webhooks"),
+        (DIGEST_SMTP_MIN + "tls = true\n", "digest.smtp", "tls"),
+        (DIGEST_SMTP_MIN.replace('recipients = ["ops@example.invalid"]', "recipients = []"), "digest.smtp", "recipients"),
+        (DIGEST_SMTP_MIN.replace('recipients = ["ops@example.invalid"]', 'recipients = "ops@example.invalid"'), "digest.smtp", "recipients"),
+        (DIGEST_SMTP_MIN.replace('recipients = ["ops@example.invalid"]', 'recipients = [""]'), "digest.smtp", "recipients"),
+        (DIGEST_SMTP_MIN.replace('recipients = ["ops@example.invalid"]', 'recipients = ["a@x\\nBcc: b@y"]'), "digest.smtp", "recipients"),
+        (DIGEST_SMTP_MIN.replace('recipients = ["ops@example.invalid"]', ""), "digest.smtp", "recipients"),
+        (DIGEST_SMTP_MIN.replace('host = "smtp.example.invalid"', ""), "digest.smtp", "host"),
+        (DIGEST_SMTP_MIN.replace('host = "smtp.example.invalid"', 'host = "smtp .example"'), "digest.smtp", "host"),
+        (DIGEST_SMTP_MIN.replace('host = "smtp.example.invalid"', 'host = ""'), "digest.smtp", "host"),
+        (DIGEST_SMTP_MIN.replace('sender = "sot@example.invalid"', 'sender = "a@x\\r\\nBcc: b@y"'), "digest.smtp", "sender"),
+        (DIGEST_SMTP_MIN + 'subject = "Hi\\nBcc: x"\n', "digest.smtp", "subject"),
+        (DIGEST_SMTP_MIN + "port = 0\n", "digest.smtp", "port"),
+        (DIGEST_SMTP_MIN + "port = 70000\n", "digest.smtp", "port"),
+        (DIGEST_SMTP_MIN + "timeout_seconds = 0\n", "digest.smtp", "timeout_seconds"),
+        (DIGEST_SMTP_MIN + 'starttls = "false"\n', "digest.smtp", "starttls"),
+        (DIGEST_SMTP_MIN + "starttls = false\n", "digest.smtp", "starttls"),
+        (DIGEST_SMTP_MIN + "starttls = false\nallow_insecure_localhost = true\n", "digest.smtp", "starttls"),
+        (DIGEST_SMTP_MIN.replace("smtp.example.invalid", "localhost") + "starttls = false\n", "digest.smtp", "starttls"),
+        (DIGEST_SMTP_MIN + 'username = "${env:U}"\n', "digest.smtp", "password"),
+        (DIGEST_SMTP_MIN + 'password = "${env:P}"\n', "digest.smtp", "username"),
+        ('[[digest.webhooks]]\nname = "a"\nurl = "${env:A}"\nsecret = 1\n', "digest.webhooks[0]", "secret"),
+        ('[[digest.webhooks]]\nurl = "${env:A}"\n', "digest.webhooks[0]", "name"),
+        ('[[digest.webhooks]]\nname = "a"\n', "digest.webhooks[0]", "url"),
+        ('[[digest.webhooks]]\nname = "a"\nurl = "${env:A}"\ntimeout_seconds = -1\n', "digest.webhooks[0]", "timeout_seconds"),
+        (
+            '[[digest.webhooks]]\nname = "a"\nurl = "${env:A}"\n'
+            '[[digest.webhooks]]\nname = "a"\nurl = "${env:B}"\n',
+            "digest.webhooks[1]",
+            "name",
+        ),
+    ],
+)
+def test_invalid_digest_config(tmp_path, text, table, key):
+    _error(tmp_path, SITE + text, table, key)
+
+
+def test_digest_must_be_a_table(tmp_path):
+    _error(tmp_path, "digest = 1\n" + SITE, "root", "digest")
+
+
+@pytest.mark.parametrize(
+    "literal",
+    ["https://hooks.example.invalid/T0/s3cr3t?sig=abc", "${env:BAD-NAME}", "x${env:A}"],
+)
+def test_literal_webhook_url_rejected_without_echo(tmp_path, literal):
+    text = SITE + f'[[digest.webhooks]]\nname = "a"\nurl = "{literal}"\n'
+    message = _error(tmp_path, text, "digest.webhooks[0]", "url")
+    assert literal not in message
+    assert "s3cr3t" not in message
+
+
+def test_literal_smtp_password_rejected_without_echo(tmp_path):
+    text = SITE + DIGEST_SMTP_MIN + 'username = "${env:U}"\npassword = "hunter2-s3cr3t"\n'
+    message = _error(tmp_path, text, "digest.smtp", "password")
+    assert "s3cr3t" not in message
+
+
+def test_env_resolved_smtp_host_not_echoed(tmp_path, monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", "bad host-s3cr3t")
+    text = SITE + DIGEST_SMTP_MIN.replace('"smtp.example.invalid"', '"${env:SMTP_HOST}"')
+    message = _error(tmp_path, text, "digest.smtp", "host")
+    assert "s3cr3t" not in message
+
+
+def test_shipped_example_has_digest_section(monkeypatch):
+    for name in ("SOT_DIGEST_SMTP_USER", "SOT_DIGEST_SMTP_PASSWORD", "SOT_DIGEST_WEBHOOK_URL"):
+        monkeypatch.delenv(name, raising=False)
+    cfg = load_config(EXAMPLE_PATH)
+    assert cfg.digest.smtp is not None
+    assert cfg.digest.webhooks and cfg.digest.webhooks[0].url.variable == "SOT_DIGEST_WEBHOOK_URL"
