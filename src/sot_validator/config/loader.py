@@ -15,9 +15,11 @@ ENV_REFERENCE_PATTERN = re.compile(r"^\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}$")
 REDACTED = "***"
 MAX_PROBES_PER_SITE_CAP = 64
 SNMP_VERSIONS: tuple[str, ...] = ("v1", "v2c")
+DIGEST_POLICIES: tuple[str, ...] = ("on_change", "always")
+DEFAULT_DIGEST_SUBJECT = "SoT weekly change digest"
 
 _ROOT_KEYS = frozenset(
-    {"policy", "retention", "sites", "vcenters", "snmp_profiles", "proxmox"}
+    {"policy", "retention", "sites", "vcenters", "snmp_profiles", "proxmox", "digest"}
 )
 _POLICY_DAY_PAIRS: tuple[tuple[str, str], ...] = (
     ("arp_active_within_days", "arp_stale_after_days"),
@@ -30,6 +32,22 @@ _PROXMOX_KEYS = frozenset(
     {"name", "host", "port", "token_id", "token_secret", "verify_tls"}
 )
 _RETENTION_KEYS = frozenset({"max_age_days", "max_runs_per_site"})
+_DIGEST_KEYS = frozenset({"policy", "smtp", "webhooks"})
+_DIGEST_SMTP_KEYS = frozenset(
+    {
+        "host",
+        "port",
+        "sender",
+        "recipients",
+        "starttls",
+        "allow_insecure_localhost",
+        "timeout_seconds",
+        "subject",
+        "username",
+        "password",
+    }
+)
+_DIGEST_WEBHOOK_KEYS = frozenset({"name", "url", "timeout_seconds"})
 
 
 class ConfigError(ValueError):
@@ -114,6 +132,34 @@ class ProxmoxConfig:
 
 
 @dataclass(frozen=True)
+class DigestSmtpConfig:
+    host: str
+    sender: str
+    recipients: tuple[str, ...]
+    port: int = 587
+    starttls: bool = True
+    allow_insecure_localhost: bool = False
+    timeout_seconds: float = 10.0
+    subject: str = DEFAULT_DIGEST_SUBJECT
+    username: Optional[SecretValue] = None
+    password: Optional[SecretValue] = None
+
+
+@dataclass(frozen=True)
+class DigestWebhookConfig:
+    name: str
+    url: SecretValue
+    timeout_seconds: float = 10.0
+
+
+@dataclass(frozen=True)
+class DigestConfig:
+    policy: str = "on_change"
+    smtp: Optional[DigestSmtpConfig] = None
+    webhooks: tuple[DigestWebhookConfig, ...] = ()
+
+
+@dataclass(frozen=True)
 class AppConfig:
     source_path: Path
     policy: PolicyConfig
@@ -122,6 +168,7 @@ class AppConfig:
     snmp_profiles: tuple[SnmpProfile, ...]
     proxmox: tuple[ProxmoxConfig, ...]
     retention: RetentionConfig = RetentionConfig()
+    digest: DigestConfig = DigestConfig()
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serialisable dict with networks as strings and secrets redacted."""
@@ -178,7 +225,33 @@ class AppConfig:
                 }
                 for node in self.proxmox
             ],
+            "digest": _digest_to_dict(self.digest),
         }
+
+
+def _digest_to_dict(digest: DigestConfig) -> dict[str, Any]:
+    smtp = digest.smtp
+    return {
+        "policy": digest.policy,
+        "smtp": None
+        if smtp is None
+        else {
+            "host": smtp.host,
+            "port": smtp.port,
+            "sender": smtp.sender,
+            "recipients": list(smtp.recipients),
+            "starttls": smtp.starttls,
+            "allow_insecure_localhost": smtp.allow_insecure_localhost,
+            "timeout_seconds": smtp.timeout_seconds,
+            "subject": smtp.subject,
+            "username": None if smtp.username is None else REDACTED,
+            "password": None if smtp.password is None else REDACTED,
+        },
+        "webhooks": [
+            {"name": hook.name, "url": REDACTED, "timeout_seconds": hook.timeout_seconds}
+            for hook in digest.webhooks
+        ],
+    }
 
 
 _MISSING = object()
@@ -307,14 +380,17 @@ def load_config(path: str | os.PathLike) -> AppConfig:
         vcenters=_parse_named(root, "vcenters", _parse_vcenter),
         snmp_profiles=_parse_named(root, "snmp_profiles", _parse_snmp_profile),
         proxmox=_parse_named(root, "proxmox", _parse_proxmox),
+        digest=_parse_digest(root),
     )
 
 
-def _parse_named(root: _Table, key: str, parse: Callable[[_Table], Any]) -> tuple[Any, ...]:
+def _parse_named(
+    root: _Table, key: str, parse: Callable[[_Table], Any], *, prefix: str = ""
+) -> tuple[Any, ...]:
     """Parse an optional array of tables whose entries must have unique names."""
     entries: list[Any] = []
     seen: dict[str, str] = {}
-    for table in _array_of_tables(root, key, required=False):
+    for table in _array_of_tables(root, key, required=False, prefix=prefix):
         entry = parse(table)
         if entry.name in seen:
             raise table.error(
@@ -325,17 +401,23 @@ def _parse_named(root: _Table, key: str, parse: Callable[[_Table], Any]) -> tupl
     return tuple(entries)
 
 
-def _array_of_tables(root: _Table, key: str, *, required: bool) -> list[_Table]:
+def _array_of_tables(
+    root: _Table, key: str, *, required: bool, prefix: str = ""
+) -> list[_Table]:
+    """Tables are named `<prefix><key>[<index>]`, e.g. `digest.webhooks[0]`."""
     value = root.data.get(key, _MISSING)
     if value is _MISSING:
         if required:
             raise root.error(key, "required key is missing")
         return []
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise root.error(key, f"expected an array of tables ([[{key}]])")
+        raise root.error(key, f"expected an array of tables ([[{prefix}{key}]])")
     if required and not value:
         raise root.error(key, "must contain at least one entry")
-    return [_Table(root.source, f"{key}[{index}]", item) for index, item in enumerate(value)]
+    return [
+        _Table(root.source, f"{prefix}{key}[{index}]", item)
+        for index, item in enumerate(value)
+    ]
 
 
 def _parse_policy(root: _Table) -> PolicyConfig:
@@ -499,4 +581,106 @@ def _parse_proxmox(table: _Table) -> ProxmoxConfig:
         token_id=table.string("token_id"),
         token_secret=table.secret("token_secret"),
         verify_tls=table.boolean("verify_tls", default=True),
+    )
+
+
+def _is_loopback_host(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _header_string(table: _Table, key: str, *, default: Any = _MISSING) -> str:
+    value = table.string(key, default=default, non_empty=True)
+    if "\r" in value or "\n" in value:
+        raise table.error(key, "must not contain CR or LF characters")
+    return value
+
+
+def _parse_digest(root: _Table) -> DigestConfig:
+    value = root.data.get("digest", _MISSING)
+    if value is _MISSING:
+        return DigestConfig()
+    if not isinstance(value, dict):
+        raise root.error("digest", "expected a table ([digest])")
+    table = _Table(root.source, "digest", value)
+    table.reject_unknown(_DIGEST_KEYS)
+    policy = table.string("policy", default=DigestConfig.policy)
+    if policy not in DIGEST_POLICIES:
+        raise table.error("policy", f"must be one of {', '.join(DIGEST_POLICIES)}")
+
+    smtp: Optional[DigestSmtpConfig] = None
+    raw_smtp = table.data.get("smtp", _MISSING)
+    if raw_smtp is not _MISSING:
+        if not isinstance(raw_smtp, dict):
+            raise table.error("smtp", "expected a table ([digest.smtp])")
+        smtp = _parse_digest_smtp(_Table(root.source, "digest.smtp", raw_smtp))
+    webhooks = _parse_named(table, "webhooks", _parse_digest_webhook, prefix="digest.")
+    return DigestConfig(policy=policy, smtp=smtp, webhooks=webhooks)
+
+
+def _parse_digest_smtp(table: _Table) -> DigestSmtpConfig:
+    table.reject_unknown(_DIGEST_SMTP_KEYS)
+    defaults = DigestSmtpConfig(host="", sender="", recipients=())
+    host = table.string("host", non_empty=True)
+    if any(ch.isspace() or not ch.isprintable() for ch in host):
+        raise table.error("host", "must not contain whitespace or control characters")
+    sender = _header_string(table, "sender")
+
+    raw_recipients = table.raw("recipients", _MISSING)
+    if not isinstance(raw_recipients, list):
+        raise table.error(
+            "recipients", f"expected an array of strings, got {_type_name(raw_recipients)}"
+        )
+    if not raw_recipients:
+        raise table.error("recipients", "must list at least one recipient")
+    for index, recipient in enumerate(raw_recipients):
+        if not isinstance(recipient, str) or not recipient.strip():
+            raise table.error("recipients", f"entry {index} must be a non-empty string")
+        if "\r" in recipient or "\n" in recipient:
+            raise table.error("recipients", f"entry {index} must not contain CR or LF characters")
+
+    starttls = table.boolean("starttls", default=defaults.starttls)
+    allow_insecure = table.boolean(
+        "allow_insecure_localhost", default=defaults.allow_insecure_localhost
+    )
+    if not starttls and not (allow_insecure and _is_loopback_host(host)):
+        raise table.error(
+            "starttls",
+            "false is only allowed with allow_insecure_localhost = true "
+            "and a localhost or loopback host",
+        )
+
+    username = table.secret("username") if "username" in table.data else None
+    password = table.secret("password") if "password" in table.data else None
+    if (username is None) != (password is None):
+        missing = "password" if password is None else "username"
+        present = "username" if missing == "password" else "password"
+        raise table.error(missing, f"must be set together with {present}")
+
+    return DigestSmtpConfig(
+        host=host,
+        sender=sender,
+        recipients=tuple(raw_recipients),
+        port=table.integer("port", default=defaults.port, minimum=1, maximum=65535),
+        starttls=starttls,
+        allow_insecure_localhost=allow_insecure,
+        timeout_seconds=table.positive_days("timeout_seconds", default=defaults.timeout_seconds),
+        subject=_header_string(table, "subject", default=defaults.subject),
+        username=username,
+        password=password,
+    )
+
+
+def _parse_digest_webhook(table: _Table) -> DigestWebhookConfig:
+    table.reject_unknown(_DIGEST_WEBHOOK_KEYS)
+    return DigestWebhookConfig(
+        name=table.string("name", non_empty=True),
+        url=table.secret("url"),
+        timeout_seconds=table.positive_days(
+            "timeout_seconds", default=DigestWebhookConfig.timeout_seconds
+        ),
     )
