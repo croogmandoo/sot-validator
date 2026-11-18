@@ -41,6 +41,8 @@ logger = logging.getLogger(__name__)
 DIGEST_EVENT_TYPE = "sot_validator_weekly_digest"
 DEFAULT_DIGEST_SUBJECT = "SoT weekly change digest"
 
+_REDACTED_DESTINATION = "<redacted>"
+
 _ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
@@ -85,6 +87,36 @@ def _require_env_name(value: Any, field_name: str) -> Optional[str]:
     return value
 
 
+def _safe_destination(destination: str) -> str:
+    """Reduce any destination to scheme://host[:port]; non-URLs become a placeholder."""
+    try:
+        parts = urllib.parse.urlsplit(destination)
+    except ValueError:
+        return _REDACTED_DESTINATION
+    if not parts.scheme or not parts.netloc:
+        return _REDACTED_DESTINATION
+    return f"{parts.scheme}://{parts.netloc.rpartition('@')[2]}"
+
+
+def _url_secrets(url: str) -> list[Optional[str]]:
+    """The URL plus its userinfo, username, password, query, fragment and path."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return [url]
+    secrets: list[Optional[str]] = [
+        url,
+        parts.netloc.rpartition("@")[0] or None,
+        parts.username,
+        parts.password,
+        parts.query or None,
+        parts.fragment or None,
+    ]
+    if len(parts.path) > 1:
+        secrets.append(parts.path)
+    return secrets
+
+
 def _is_loopback(host: str) -> bool:
     if host.lower() == "localhost":
         return True
@@ -106,19 +138,22 @@ class DigestSink(ABC):
         raise NotImplementedError
 
     def _result(self, destination: str, detail: Optional[str]) -> DigestDeliveryResult:
+        # Redact here so no sink can log or return a raw destination or its secrets.
+        safe_destination = _safe_destination(destination)
         if detail is not None:
+            detail = _redact(detail, _url_secrets(destination))
             logger.warning(
                 "Digest sink %s (%s, %s) failed: %s",
                 self.name,
                 self.kind,
-                destination,
+                safe_destination,
                 detail,
             )
         return DigestDeliveryResult(
             name=self.name,
             kind=self.kind,
             status="sent" if detail is None else "failed",
-            destination=destination,
+            destination=safe_destination,
             detail=detail,
         )
 
@@ -303,18 +338,7 @@ class WebhookDigestSink(DigestSink):
     __str__ = __repr__
 
     def _secrets(self) -> list[Optional[str]]:
-        parts = urllib.parse.urlsplit(self._url)
-        secrets: list[Optional[str]] = [
-            self._url,
-            parts.netloc.rpartition("@")[0] or None,
-            parts.username,
-            parts.password,
-            parts.query or None,
-            parts.fragment or None,
-        ]
-        if len(parts.path) > 1:
-            secrets.append(parts.path)
-        return secrets
+        return _url_secrets(self._url)
 
     def send(self, digest: ChangeDigest) -> DigestDeliveryResult:
         _require_digest(digest)
