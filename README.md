@@ -150,6 +150,11 @@ PYTHONPATH=src python3 -m sot_validator reconcile \
   --snmp-fixture tests/fixtures/sot_samples/snmp/extreme_and_apc_walks.json \
   --output-dir ./output
 
+# Optional (both off by default): --oui-dir adds observed_mac_vendor/observed_mac_class from offline
+# IEEE CSVs; --exclude-randomized-macs leaves randomised (locally-administered, no OUI match) MACs uncounted
+PYTHONPATH=src python3 -m sot_validator reconcile --fixtures --output-dir ./output \
+  --oui-dir tests/fixtures/oui --exclude-randomized-macs
+
 # Run a rolling multi-site validation campaign with circuit breaker and alert output
 PYTHONPATH=src python3 -m sot_validator campaign \
   --fixtures \
