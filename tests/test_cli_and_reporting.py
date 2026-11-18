@@ -285,7 +285,7 @@ def test_cli_end_to_end_run_and_step_by_step_subcommands(tmp_path: Path) -> None
     # Step 1: End-to-end `run --fixtures`
     run_out_dir = tmp_path / "run_out"
     rc = main(["run", "--fixtures", "--output-dir", str(run_out_dir)])
-    assert rc == 0
+    assert rc == 1
 
     for fname in (
         "validation_report.json",
@@ -403,7 +403,7 @@ def test_cli_subprocess_and_discovery_fixtures(tmp_path: Path) -> None:
         text=True,
         check=False,
     )
-    assert proc.returncode == 0, proc.stderr
+    assert proc.returncode == 1, proc.stderr
     report_json = json.loads(
         (sub_out / "validation_report.json").read_text(encoding="utf-8")
     )
@@ -430,7 +430,7 @@ def test_cli_subprocess_and_discovery_fixtures(tmp_path: Path) -> None:
             str(sample_out),
         ]
     )
-    assert rc == 0
+    assert rc == 1
     sample_report = json.loads(
         (sample_out / "validation_report.json").read_text(encoding="utf-8")
     )

@@ -4,7 +4,7 @@ usage: sot-validator campaign [-h] [--snapshot-dir SNAPSHOT_DIR] [--output-dir O
                               [--max-consecutive-aborted-sites MAX_CONSECUTIVE_ABORTED_SITES]
                               [--high-stale-ratio-threshold HIGH_STALE_RATIO_THRESHOLD]
                               [--alerts-file ALERTS_FILE] [--webhook-format {generic,slack,teams}]
-                              [--history-db HISTORY_DB] [--html-dashboard]
+                              [--history-db HISTORY_DB] [--html-dashboard] [--lock-file LOCK_FILE]
                               [--site-ids SITE_IDS [SITE_IDS ...]] [--all-sites]
                               [--batch-size BATCH_SIZE] [--rate-limit RATE_LIMIT] [--no-resume]
                               [--fixtures] [--num-sites NUM_SITES] [--fixture-path FIXTURE_PATH]
@@ -46,6 +46,9 @@ options:
   --history-db HISTORY_DB
                         Optional HistoryStore SQLite DB to record committed validation results.
   --html-dashboard      Generate validation_dashboard.html in --output-dir.
+  --lock-file LOCK_FILE
+                        Run lock file (default: <output-dir>/.sot-validator.lock). Exits 4 without
+                        doing anything if another run holds the lock.
   --site-ids SITE_IDS [SITE_IDS ...]
                         Target site IDs (comma-separated or space-separated, e.g.
                         site-001,site-002).
@@ -86,3 +89,7 @@ options:
                         Reference ISO-8601 UTC timestamp for signal recency evaluation.
   --include-ips, --no-include-ips
                         Include IPAddress records in site validation results (default: True).
+
+Exit codes: 0 all sites ok or skipped with no findings, 1 actionable stale or unreachable
+findings, 2 some sites failed, 3 the run failed as a whole or every site failed, 4 another run
+holds the lock and nothing was done.

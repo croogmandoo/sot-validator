@@ -21,6 +21,8 @@ FIXTURE_SITES = ["site-001", "site-002", "site-003"]
 SECRET_VARS = ("SOT_VCENTER_PASSWORD", "SOT_SNMP_COMMUNITY", "SOT_PROXMOX_TOKEN_SECRET")
 SENTINEL = "sentinel-Zq7-secret-value"
 NOW = "2026-04-11T00:00:00Z"
+# `run` and `campaign` exit 1 (actionable) because the fixtures hold stale and unreachable records.
+FIXTURE_RC = {"validate": 0, "run": 1, "campaign": 1}
 
 SITE_001 = """
 [[sites]]
@@ -136,7 +138,7 @@ def engine_thresholds(monkeypatch) -> list[dict[str, float]]:
 def test_recency_thresholds_reach_engine(tmp_path, capsys, engine_thresholds, command, flags, policy, expected):
     prefix = ["--config", str(_config(tmp_path, policy))] if policy is not None else []
     rc, _, err = _run(capsys, *prefix, command, "--fixtures", "--output-dir", str(tmp_path / "out"), *flags)
-    assert rc == 0, err
+    assert rc == FIXTURE_RC[command], err
     assert engine_thresholds
     for call in engine_thresholds:
         assert (call["active_within_days"], call["stale_after_days"]) == expected
@@ -183,7 +185,7 @@ def test_target_sites(tmp_path, capsys, command, use_config, flags, expected):
     prefix = ["--config", str(_config(tmp_path))] if use_config else []
     out = tmp_path / "out"
     rc, _, err = _run(capsys, *prefix, command, "--fixtures", "--output-dir", str(out), *flags)
-    assert rc == 0, err
+    assert rc == FIXTURE_RC[command], err
     assert _result_sites(out) == set(expected)
 
 
@@ -191,7 +193,7 @@ def test_config_sites_feed_resolved_site_commands(tmp_path, capsys):
     cfg = _config(tmp_path, body=SITE_003)
     out = tmp_path / "camp"
     rc, _, err = _run(capsys, "--config", str(cfg), "campaign", "--fixtures", "--output-dir", str(out))
-    assert rc == 0, err
+    assert rc == FIXTURE_RC["campaign"], err
     summary = json.loads((out / "campaign_summary.json").read_text(encoding="utf-8"))
     assert "site-003" in json.dumps(summary)
     assert "site-001" not in json.dumps(summary)
@@ -339,10 +341,10 @@ def test_discover_max_concurrency(tmp_path, capsys, monkeypatch, flags, policy, 
 @pytest.mark.parametrize("command", ["validate", "run"])
 def test_without_config_results_match_built_in_defaults(tmp_path, capsys, command):
     plain, explicit = tmp_path / "plain", tmp_path / "explicit"
-    assert main([command, "--fixtures", "--output-dir", str(plain)]) == 0
+    assert main([command, "--fixtures", "--output-dir", str(plain)]) == FIXTURE_RC[command]
     assert main(
         [command, "--fixtures", "--output-dir", str(explicit), "--active-within-days", "7.0", "--stale-after-days", "30.0", "--all-sites"]
-    ) == 0
+    ) == FIXTURE_RC[command]
     capsys.readouterr()
     assert (plain / "validation_results.json").read_bytes() == (explicit / "validation_results.json").read_bytes()
     assert _result_sites(plain) == set(FIXTURE_SITES)
@@ -493,7 +495,7 @@ def test_secret_sentinel_never_printed(tmp_path, capsys, monkeypatch):
         codes.append(rc)
         assert SENTINEL not in out
         assert SENTINEL not in err
-    assert codes == [0, 0, 0, 0, 2, 2, 2]
+    assert codes == [0, FIXTURE_RC["run"], 0, 0, 2, 2, 2]
     for path in tmp_path.rglob("*"):
         if path.is_file() and path.suffix != ".db":
             assert SENTINEL not in path.read_text(encoding="utf-8", errors="replace"), path
