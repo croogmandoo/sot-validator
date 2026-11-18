@@ -934,6 +934,19 @@ NAMESPACE_CASES = [
          "func": "cmd_power_risk"},
         id="power-risk",
     ),
+    pytest.param(
+        ["synth-fleet", "--seed", "7", "--sites", "3", "--subnets-per-site", "2",
+         "--hosts-per-subnet", "5", "--output-dir", "out"],
+        {"subcommand": "synth-fleet",
+         "fleet_config_path": None,
+         "seed": 7,
+         "sites": 3,
+         "subnets_per_site": 2,
+         "hosts_per_subnet": 5,
+         "output_dir": Path("out"),
+         "func": "cmd_synth_fleet"},
+        id="synth-fleet",
+    ),
 ]
 
 ALIAS_CASES = [
