@@ -72,18 +72,17 @@ def _check_vlan_digits(value: Any, field_name: str) -> None:
             raise ValueError(f"{field_name} is not a usable VLAN ID ({len(text)} digits)") from exc
 
 
-def _is_vlan_value(value: Any) -> bool:
+def _is_vlan_value(value: Any, field_name: str = "vlan_ids item") -> bool:
     if not isinstance(value, (str, int)) or isinstance(value, bool):
         return False
-    _check_vlan_digits(value, "vlan_ids item")
+    _check_vlan_digits(value, field_name)
     return True
 
 
 def _fdb_entry(data: Mapping[str, Any]) -> FdbEntry:
     vlan_id = data.get("vlan_id")
-    if vlan_id is not None and not _is_vlan_value(vlan_id):
+    if vlan_id is not None and not _is_vlan_value(vlan_id, "vlan_id"):
         raise ValueError(f"vlan_id must be a string, integer or null, got {vlan_id!r}")
-    _check_vlan_digits(vlan_id, "vlan_id")
     return FdbEntry.from_dict(data)
 
 

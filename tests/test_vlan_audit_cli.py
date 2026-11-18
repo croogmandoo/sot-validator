@@ -450,6 +450,17 @@ ERROR_CASES = [
 ]
 
 
+LONG_VLAN_MESSAGES = {
+    "snapshot-long-vlan-id": "VLAN vlan_id is not a usable VLAN ID (5000 digits)",
+    "snapshot-long-subnet-vlan-id": "subnet 'sub-10' vlan_id is not a usable VLAN ID (5000 digits)",
+    "snapshot-long-port-vlan-id": "port 'sw-01-p1' vlan_id is not a usable VLAN ID (5000 digits)",
+    "fdb-entry-long-vlan-id": "vlan_id is not a usable VLAN ID (5000 digits)",
+    "fdb-ports-long-vlan-ids-item": "vlan_ids item is not a usable VLAN ID (5000 digits)",
+    "router-arp-long-vlan-id": "vlan_id is not a usable VLAN ID (5000 digits)",
+    "router-arp-long-interface-vlan": "interface has a VLAN number too long to read",
+}
+
+
 @pytest.mark.parametrize(("flag", "name", "payload"), ERROR_CASES)
 def test_input_errors_print_one_line_and_write_nothing(
     flag: str,
@@ -457,6 +468,7 @@ def test_input_errors_print_one_line_and_write_nothing(
     payload: Any,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    request: pytest.FixtureRequest,
 ) -> None:
     path = tmp_path / name
     argv = ["vlan-audit"]
@@ -481,5 +493,8 @@ def test_input_errors_print_one_line_and_write_nothing(
     assert "Traceback" not in err
     if payload == "site-id":
         assert "site 'site-999' not found" in lines[0]
+    expected = LONG_VLAN_MESSAGES.get(request.node.callspec.id)
+    if expected is not None:
+        assert lines[0].endswith(f": {expected}"), lines[0]
     assert not out_json.exists()
     assert not out_md.exists()
