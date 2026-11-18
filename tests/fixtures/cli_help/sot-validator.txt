@@ -1,11 +1,11 @@
 usage: sot-validator [-h] [--config PATH] [--log-format {text,json}]
                      [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--metrics-file PATH]
-                     {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power} ...
+                     {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power,synth-fleet} ...
 
 Read-only batch inventory validation system for legacy Network Source of Truth.
 
 positional arguments:
-  {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power}
+  {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power,synth-fleet}
     extract             Extract read-only site inventory batches into local snapshots.
     validate            Evaluate passive, hypervisor, directory/DNS, and scoped active signals
                         against site snapshots.
@@ -69,6 +69,8 @@ positional arguments:
                         writes the database).
     power               Offline UPS power-dependency blast radius and risk ranking from an
                         operator power map (no network I/O).
+    synth-fleet         Write a seeded, deterministic synthetic fleet as a snapshot folder (no
+                        network I/O).
 
 options:
   -h, --help            show this help message and exit

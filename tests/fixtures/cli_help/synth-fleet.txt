@@ -1,0 +1,15 @@
+usage: sot-validator synth-fleet [-h] --seed SEED [--sites SITES]
+                                 [--subnets-per-site SUBNETS_PER_SITE]
+                                 [--hosts-per-subnet HOSTS_PER_SUBNET] --output-dir OUTPUT_DIR
+
+options:
+  -h, --help            show this help message and exit
+  --seed SEED           Generator seed; the same seed and sizes always write identical files.
+  --sites SITES         Number of sites, 1 to 254 (default: 100).
+  --subnets-per-site SUBNETS_PER_SITE
+                        Number of /24 subnets per site, 1 to 256 (default: 10).
+  --hosts-per-subnet HOSTS_PER_SUBNET
+                        Number of hosts per subnet, 0 to 245 (default: 60).
+  --output-dir OUTPUT_DIR
+                        Snapshot folder; sites are written to <output-dir>/sites/<site_id>.json
+                        (created if missing).
