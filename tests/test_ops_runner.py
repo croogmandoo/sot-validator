@@ -132,6 +132,61 @@ def test_garbage_record_does_not_block(tmp_path, caplog):
     assert not caplog.records
 
 
+def test_symlinked_lock_path_is_not_followed(tmp_path):
+    target = tmp_path / "target"
+    target.write_bytes(b"keep\n")
+    link = tmp_path / "run.lock"
+    link.symlink_to(target)
+    with pytest.raises(OSError):
+        RunLock(link).acquire()
+    assert target.read_bytes() == b"keep\n"
+
+
+def _hold_flock(lock_path: Path, record: dict) -> int:
+    lock_path.write_text(json.dumps(record))
+    fd = os.open(lock_path, os.O_RDWR)
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    return fd
+
+
+def test_malformed_started_at_dropped_from_held_message(tmp_path):
+    lock_path = tmp_path / "run.lock"
+    fd = _hold_flock(lock_path, {"pid": os.getppid(), "started_at": "not-a-date\nINJECTED"})
+    try:
+        with pytest.raises(RunLockHeld) as info:
+            RunLock(lock_path).acquire()
+    finally:
+        os.close(fd)
+    assert info.value.pid == os.getppid()
+    assert info.value.started_at is None
+    assert "INJECTED" not in str(info.value)
+    assert "unknown time" in str(info.value)
+
+
+def test_valid_started_at_normalised_in_held_message(tmp_path):
+    lock_path = tmp_path / "run.lock"
+    fd = _hold_flock(lock_path, {"pid": os.getppid(), "started_at": "2026-11-16T02:00:00+00:00"})
+    try:
+        with pytest.raises(RunLockHeld) as info:
+            RunLock(lock_path).acquire()
+    finally:
+        os.close(fd)
+    assert info.value.started_at == "2026-11-16T02:00:00+00:00"
+    assert "2026-11-16T02:00:00+00:00" in str(info.value)
+
+
+def test_malformed_started_at_dropped_from_reclaim_warning(tmp_path, caplog):
+    lock_path = tmp_path / "run.lock"
+    dead = _dead_pid()
+    lock_path.write_text(json.dumps({"pid": dead, "started_at": "not-a-date\nINJECTED"}))
+    with caplog.at_level(logging.WARNING, logger="sot_validator"):
+        with RunLock(lock_path):
+            pass
+    messages = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert any(f"dead pid {dead}" in m for m in messages)
+    assert not any("INJECTED" in m for m in messages)
+
+
 def test_release_when_not_held_is_noop(tmp_path):
     lock = RunLock(tmp_path / "run.lock")
     lock.release()
@@ -153,7 +208,9 @@ def test_manifest_write_round_trip(tmp_path):
         "config_sha256",
         "sites",
         "output_files",
+        "failure_reason",
     }
+    assert data["failure_reason"] is None
     assert data["started_at"] == "2026-11-17T02:00:00+00:00"
     assert data["sites"][1] == {"site_id": "site-002", "status": "skipped", "reason": "out of batch"}
     assert data["output_files"] == ["/var/lib/sot-validator/output/validation_report.json"]
