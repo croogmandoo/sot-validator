@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import inspect
 import ipaddress
+import os
 import re
 import socket
 import subprocess
@@ -432,6 +433,21 @@ def _run_coro_sync(coro: Any) -> Any:
     return asyncio.run(coro)
 
 
+_DEFAULT_CHILD_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+def _minimal_child_env() -> dict[str, str]:
+    """Allowlisted environment for child processes: ``PATH`` plus ``LANG``/``LC_*`` only."""
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key in ("PATH", "LANG") or key.startswith("LC_")
+    }
+    if not env.get("PATH"):
+        env["PATH"] = _DEFAULT_CHILD_PATH
+    return env
+
+
 async def _default_async_ping(
     ip: str, timeout_sec: float
 ) -> tuple[bool, Optional[float]]:
@@ -448,6 +464,7 @@ async def _default_async_ping(
             ip,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            env=_minimal_child_env(),
         )
         try:
             stdout_bytes, _ = await asyncio.wait_for(
@@ -494,6 +511,7 @@ def _default_arp_table_reader() -> dict[str, tuple[Optional[str], Optional[str]]
             text=True,
             timeout=3.0,
             check=False,
+            env=_minimal_child_env(),
         )
     except (OSError, subprocess.SubprocessError):
         return {}

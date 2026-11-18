@@ -345,3 +345,5 @@ Approximately **90% of virtual machines run Microsoft Windows Server or Windows 
 2. **Bounded Concurrency**:
    - ICMP probing is capped at `32` concurrent in-flight packets per site batch (`count=2`, `timeout=1.0s`).
    - Sites are processed in sequential or bounded-concurrency batches (`10.x.0.0/16` per site) with local snapshot checkpointing between stages.
+3. **Minimal Child-Process Environment**:
+   - The discovery `ping` and `ip neigh` child processes run with a minimal allowlisted environment (`PATH` and `LANG`/`LC_*` only), so `${env:NAME}` secrets are never inherited.
