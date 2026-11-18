@@ -41,10 +41,11 @@ ACTIONABLE_CLASSIFICATIONS = frozenset(
 
 @dataclass
 class OpsRunProgress:
-    """Site statuses and report files a body has recorded so far."""
+    """Site statuses, report files and validation results a body has recorded so far."""
 
     sites: list[SiteStatus] = field(default_factory=list)
     output_files: list[str] = field(default_factory=list)
+    results: list[ValidationResult] = field(default_factory=list)
 
 
 OpsRunBody = Callable[[OpsRunProgress], tuple[list[SiteStatus], list[str], bool]]
@@ -110,6 +111,8 @@ def run_with_ops_contract(
 
     try:
         progress = OpsRunProgress()
+        # Left on args so `main()` can report per-site metrics for `--metrics-file`.
+        args.ops_progress = progress
         failure_reason: Optional[str] = None
         try:
             sites, output_files, actionable = body(progress)

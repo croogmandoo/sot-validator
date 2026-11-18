@@ -29,6 +29,11 @@ from sot_validator.cli import (
     workbench,
 )
 from sot_validator.cli._config import config_error, threshold_conflict
+from sot_validator.cli._observability import (
+    add_observability_arguments,
+    configure_cli_logging,
+    dispatch,
+)
 from sot_validator.config import ConfigError, load_config
 
 # Registration order is the order subcommands appear in the top-level `--help`.
@@ -72,6 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
             "for subcommands; explicit flags always win. Give it before the subcommand."
         ),
     )
+    add_observability_arguments(parser)
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
     for module in COMMAND_MODULES:
@@ -97,4 +103,5 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         conflict = threshold_conflict(args)
         if conflict is not None:
             return config_error(conflict)
-    return int(handler(args))
+    configure_cli_logging(args)
+    return dispatch(handler, args)
