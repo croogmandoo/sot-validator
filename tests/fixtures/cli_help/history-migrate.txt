@@ -1,0 +1,13 @@
+usage: sot-validator history-migrate [-h] --db-path DB_PATH [--apply]
+
+Report the schema version of an existing SQLite HistoryStore database and the migrations this code
+would apply. The default is a dry run that opens the database read-only and writes nothing; only
+--apply runs the pending migrations, and they cannot be undone. JSON history files are not
+supported, and a missing database is never created.
+
+options:
+  -h, --help         show this help message and exit
+  --db-path DB_PATH  Path to an existing SQLite HistoryStore database. JSON history files are not
+                     supported.
+  --apply            Run the pending migrations (cannot be undone). Without it the command is a
+                     dry run that writes nothing.
