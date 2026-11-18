@@ -135,7 +135,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser, report_name: str) -> 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Register the `power` command group and its `blast-radius` / `risk` subcommands."""
-    # 28. power (Phase 16)
+    # 29. power (Phase 16)
     power_parser = subparsers.add_parser(
         "power",
         help="Offline UPS power-dependency blast radius and risk ranking from an operator power map (no network I/O).",

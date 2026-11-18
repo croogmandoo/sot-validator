@@ -1,0 +1,20 @@
+usage: sot-validator fleet-summary [-h] [--quality QUALITY] [--cert-report CERT_REPORT]
+                                   [--firmware-check FIRMWARE_CHECK] [--previous PREVIOUS]
+                                   [--site SITE] --output-dir OUTPUT_DIR
+                                   [--evaluation-time EVALUATION_TIME]
+
+options:
+  -h, --help            show this help message and exit
+  --quality QUALITY     JSON written by `quality --output-json`.
+  --cert-report CERT_REPORT
+                        JSON written by `cert-report --output-json`.
+  --firmware-check FIRMWARE_CHECK
+                        JSON written by `firmware-check --output-json`.
+  --previous PREVIOUS   fleet-summary.json from an earlier run; supplies each site's previous
+                        score for the trend.
+  --site SITE           Extra site id to list even without findings (repeatable).
+  --output-dir OUTPUT_DIR
+                        Directory for fleet-summary.md, fleet-summary.html and fleet-summary.json
+                        (created if missing).
+  --evaluation-time EVALUATION_TIME
+                        Reference ISO-8601 timestamp (naive means UTC; default: no timestamp).

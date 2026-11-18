@@ -120,7 +120,7 @@ def cmd_audit_head(args: argparse.Namespace) -> int:
 
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Register the `audit` command group and its `verify` / `head` subcommands."""
-    # 27. audit (Phase 15)
+    # 28. audit (Phase 15)
     audit_parser = subparsers.add_parser(
         "audit",
         help="Verify the curation audit-log hash chain read-only (never migrates or writes the database).",

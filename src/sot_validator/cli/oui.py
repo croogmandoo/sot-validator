@@ -78,7 +78,7 @@ def cmd_oui_lookup(args: argparse.Namespace) -> int:
 
 def register(subparsers: argparse._SubParsersAction) -> None:
     """Register the `oui` command group and its `lookup` subcommand."""
-    # 26. oui (Phase 15)
+    # 27. oui (Phase 15)
     oui_parser = subparsers.add_parser(
         "oui",
         help="Offline IEEE OUI vendor lookup and MAC address classification (no network I/O).",
