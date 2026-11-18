@@ -12,6 +12,7 @@ from sot_validator.cli import (
     core,
     discovery,
     firmware,
+    fleet,
     history,
     itsm,
     migration,
@@ -39,6 +40,7 @@ COMMAND_MODULES = (
     quality,
     cert_report,
     firmware,
+    fleet,
 )
 
 
