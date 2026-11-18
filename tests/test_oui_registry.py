@@ -14,6 +14,9 @@ from sot_validator.enrichment import (
     classify_mac,
     is_locally_administered,
     is_multicast,
+    is_randomized_mac,
+    load_oui_directory,
+    mac_annotation,
 )
 from sot_validator.topology.identifier import KNOWN_OUI_VENDORS
 
@@ -48,7 +51,16 @@ def test_package_exports() -> None:
     import sot_validator.enrichment as enrichment
 
     assert sorted(enrichment.__all__) == sorted(
-        ["OuiRegistry", "OuiMatch", "is_locally_administered", "is_multicast", "classify_mac"]
+        [
+            "OuiRegistry",
+            "OuiMatch",
+            "is_locally_administered",
+            "is_multicast",
+            "is_randomized_mac",
+            "classify_mac",
+            "load_oui_directory",
+            "mac_annotation",
+        ]
     )
 
 
@@ -384,3 +396,87 @@ def test_large_ma_l_file_loads_under_one_second(tmp_path: Path) -> None:
     match = registry.lookup("00:88:b7:01:02:03")
     assert match is not None
     assert (match.vendor, match.prefix, match.registry) == ("Vendor 34999, Inc.", "0088b7", "MA-L")
+
+
+# --- Shared helpers: directory loader, randomised test, annotation -------------
+
+
+def test_load_oui_directory_none_is_builtin_only() -> None:
+    registry = load_oui_directory(None)
+    assert registry.lookup("00:50:56:00:00:01") is None
+    assert registry.lookup("00:04:96:00:00:01").registry == "builtin"
+
+
+def test_load_oui_directory_loads_every_csv(tmp_path: Path) -> None:
+    registry = load_oui_directory(OUI_DIR)
+    assert registry.lookup("00:50:56:00:00:01").vendor == "VMware, Inc."
+    assert registry.lookup("70:b3:d5:1f:ff:ff").registry == "MA-M"
+    assert registry.lookup("70:b3:d5:12:3a:bc").registry == "MA-S"
+    assert load_oui_directory(str(OUI_DIR)).lookup("00:50:56:00:00:01").vendor == "VMware, Inc."
+
+
+def test_load_oui_directory_errors(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="^not an existing directory$"):
+        load_oui_directory(tmp_path / "missing")
+    file_path = _write_csv(tmp_path / "oui.csv", "MA-L,ABCDEF,Vendor,Addr\n")
+    with pytest.raises(ValueError, match="^not an existing directory$"):
+        load_oui_directory(file_path)
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    (empty / "notes.txt").write_text("x", encoding="utf-8")
+    (empty / "nested").mkdir()
+    _write_csv(empty / "nested" / "oui.csv", "MA-L,ABCDEF,Vendor,Addr\n")
+    with pytest.raises(ValueError, match="^directory contains no \\*\\.csv IEEE OUI files$"):
+        load_oui_directory(empty)
+    bad = tmp_path / "bad"
+    bad.mkdir()
+    (bad / "oui.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="missing required headers"):
+        load_oui_directory(bad)
+
+
+@pytest.mark.parametrize(
+    ("mac", "expected"),
+    [
+        ("02:11:22:33:44:55", True),
+        ("06:aa:bb:cc:dd:ee", True),
+        ("DA:A1:19:00:00:01", True),
+        ("0e-00-00-00-00-90", True),
+        ("aa:9c:6c:00:00:01", False),  # locally administered but builtin Ubiquiti match
+        ("00:50:56:00:00:01", False),  # universal
+        ("03:00:00:00:00:01", False),  # multicast, even with the U/L bit set
+        ("ff:ff:ff:ff:ff:ff", False),
+        ("10.0.0.2", False),
+        ("02:11:22:33:44", False),
+        (None, False),
+        ("", False),
+    ],
+)
+def test_is_randomized_mac(mac: object, expected: bool) -> None:
+    assert is_randomized_mac(OuiRegistry(), mac) is expected
+
+
+def test_is_randomized_mac_respects_registry(tmp_path: Path) -> None:
+    path = _write_csv(tmp_path / "oui.csv", "MA-L,02AABB,Local Vendor,Addr\n")
+    assert is_randomized_mac(OuiRegistry(), "02:aa:bb:00:00:01") is True
+    assert is_randomized_mac(OuiRegistry.from_ieee_csv(path), "02:aa:bb:00:00:01") is False
+
+
+@pytest.mark.parametrize(
+    ("mac", "expected"),
+    [
+        ("00:50:56:9A:42:75", {"mac": "00:50:56:9a:42:75", "vendor": "VMware, Inc.", "class": "universal"}),
+        ("70b3.d51f.ffff", {"mac": "70:b3:d5:1f:ff:ff", "vendor": "Block Holder, Medium Ltd", "class": "universal"}),
+        ("70-b3-d5-12-3a-bc", {"mac": "70:b3:d5:12:3a:bc", "vendor": "Tiny Block, Small Co", "class": "universal"}),
+        ("44:61:32:00:00:01", {"mac": "44:61:32:00:00:01", "vendor": "Ecobee", "class": "universal"}),
+        ("aa:9c:6c:00:00:01", {"mac": "aa:9c:6c:00:00:01", "vendor": "Ubiquiti UniFi", "class": "locally_administered"}),
+        ("02:11:22:33:44:55", {"mac": "02:11:22:33:44:55", "vendor": None, "class": "locally_administered"}),
+        ("01:00:5e:00:00:01", {"mac": "01:00:5e:00:00:01", "vendor": None, "class": "multicast"}),
+        ("10.0.0.1", {"mac": None, "vendor": None, "class": "invalid"}),
+        ("zz:04:96:00:00:01", {"mac": None, "vendor": None, "class": "invalid"}),
+        (None, {"mac": None, "vendor": None, "class": "invalid"}),
+    ],
+)
+def test_mac_annotation(mac: object, expected: dict) -> None:
+    registry = OuiRegistry.from_ieee_csv(MA_L_CSV, MA_M_CSV, MA_S_CSV)
+    assert mac_annotation(registry, mac) == expected

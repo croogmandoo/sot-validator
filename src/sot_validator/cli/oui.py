@@ -6,27 +6,14 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from sot_validator.cli._common import INPUT_ERRORS, _input_error
-from sot_validator.enrichment import OuiRegistry, classify_mac
+from sot_validator.enrichment import OuiRegistry, classify_mac, load_oui_directory
 from sot_validator.enrichment.oui import MAC_CLASS_INVALID
 from sot_validator.topology.device_types import normalize_mac_address
 
 _TEXT_COLUMNS = ("mac", "class", "vendor", "registry", "prefix_bits", "prefix")
-
-
-def _load_registry(oui_dir: Optional[Path]) -> OuiRegistry:
-    """Build the registry from every ``*.csv`` directly in ``oui_dir``, or the builtin table."""
-    if oui_dir is None:
-        return OuiRegistry()
-    directory = Path(oui_dir)
-    if not directory.is_dir():
-        raise ValueError("not an existing directory")
-    paths = sorted(path for path in directory.glob("*.csv") if path.is_file())
-    if not paths:
-        raise ValueError("directory contains no *.csv IEEE OUI files")
-    return OuiRegistry.from_ieee_csv(*paths)
 
 
 def _lookup_row(registry: OuiRegistry, raw: str) -> dict[str, Any]:
@@ -65,7 +52,7 @@ def _render_text(results: list[dict[str, Any]]) -> str:
 
 def cmd_oui_lookup(args: argparse.Namespace) -> int:
     try:
-        registry = _load_registry(getattr(args, "oui_dir", None))
+        registry = load_oui_directory(getattr(args, "oui_dir", None))
     except (*INPUT_ERRORS, csv.Error) as exc:
         return _input_error("--oui-dir", args.oui_dir, exc)
     results = [_lookup_row(registry, raw) for raw in args.macs]

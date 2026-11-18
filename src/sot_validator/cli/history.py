@@ -1,4 +1,4 @@
-"""Validation history and quarantine subcommands (`history`, `history-prune`, `quarantine`)."""
+"""Validation history and quarantine subcommands (`history`, `history-prune`, `history-migrate`, `quarantine`)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,9 @@ from sot_validator.cli._config import (
 )
 from sot_validator.config import ConfigError, load_config
 from sot_validator.extraction import SnapshotStore
+from sot_validator.extraction.sql_export import open_read_only_sqlite
 from sot_validator.history import (
+    HISTORY_SCHEMA_VERSION,
     HistorySchemaVersionError,
     HistoryStore,
     RetentionPolicy,
@@ -132,15 +134,23 @@ def _prune_error(message: str) -> int:
     return 2
 
 
-def cmd_history_prune(args: argparse.Namespace) -> int:
-    db_path = Path(args.db_path)
+def _history_db_path_error(db_path: Path, command: str) -> Optional[int]:
+    """Refuse a JSON or missing `--db-path` for `command`; return the exit code, or None if usable."""
     if db_path.suffix.lower() == ".json":
         return _prune_error(
-            f"--db-path {db_path}: JSON history files are not supported by history-prune; "
+            f"--db-path {db_path}: JSON history files are not supported by {command}; "
             "use a SQLite history database"
         )
     if not db_path.is_file():
         return _prune_error(f"--db-path {db_path}: history database does not exist")
+    return None
+
+
+def cmd_history_prune(args: argparse.Namespace) -> int:
+    db_path = Path(args.db_path)
+    path_error = _history_db_path_error(db_path, "history-prune")
+    if path_error is not None:
+        return path_error
     # Its own --config wins; otherwise reuse the global one main() already loaded.
     if getattr(args, "config", None) is not None:
         try:
@@ -171,6 +181,61 @@ def cmd_history_prune(args: argparse.Namespace) -> int:
         store.close()
 
     print(json.dumps(report.to_dict(), indent=2))
+    return 0
+
+
+def _read_history_schema(db_path: Path) -> tuple[int, set[str]]:
+    conn = open_read_only_sqlite(db_path)
+    try:
+        version = int(conn.execute("PRAGMA user_version").fetchone()[0])
+        tables = {
+            str(row[0])
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+    return version, tables
+
+
+def cmd_history_migrate(args: argparse.Namespace) -> int:
+    db_path = Path(args.db_path)
+    path_error = _history_db_path_error(db_path, "history-migrate")
+    if path_error is not None:
+        return path_error
+    try:
+        current, tables = _read_history_schema(db_path)
+    except sqlite3.DatabaseError as exc:
+        return _prune_error(f"--db-path {db_path}: {exc}")
+    if current > HISTORY_SCHEMA_VERSION:
+        return _prune_error(
+            f"--db-path {db_path}: history database schema version {current} is newer "
+            f"than the highest version this code supports ({HISTORY_SCHEMA_VERSION})"
+        )
+    if current == 0 and tables and "validation_runs" not in tables:
+        return _prune_error(
+            f"--db-path {db_path}: not a history database (no validation_runs table)"
+        )
+
+    pending = list(range(current + 1, HISTORY_SCHEMA_VERSION + 1))
+    final_version = current
+    if args.apply and pending:
+        try:
+            HistoryStore(db_path).close()
+            final_version, _ = _read_history_schema(db_path)
+        except (HistorySchemaVersionError, sqlite3.DatabaseError) as exc:
+            return _prune_error(f"--db-path {db_path}: {exc}")
+
+    report = {
+        "db_path": str(db_path),
+        "current_version": current,
+        "target_version": HISTORY_SCHEMA_VERSION,
+        "pending": pending,
+        "dry_run": not args.apply,
+        "final_version": final_version,
+    }
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -265,7 +330,7 @@ def cmd_quarantine(args: argparse.Namespace) -> int:
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
-    """Register the `history`, `history-prune`, `quarantine` subcommands."""
+    """Register the `history`, `history-prune`, `history-migrate`, `quarantine` subcommands."""
     # 5. history
     history_parser = subparsers.add_parser(
         "history",
@@ -379,6 +444,31 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="Optional ISO-8601 UTC timestamp to evaluate the age limit against (default: current time).",
     )
     prune_parser.set_defaults(func=cmd_history_prune)
+
+    # 5c. history-migrate
+    migrate_parser = subparsers.add_parser(
+        "history-migrate",
+        help="Report pending SQLite HistoryStore schema migrations, and apply them with --apply.",
+        description=(
+            "Report the schema version of an existing SQLite HistoryStore database and the "
+            "migrations this code would apply. The default is a dry run that opens the database "
+            "read-only and writes nothing; only --apply runs the pending migrations, and they "
+            "cannot be undone. JSON history files are not supported, and a missing database is "
+            "never created."
+        ),
+    )
+    migrate_parser.add_argument(
+        "--db-path",
+        type=Path,
+        required=True,
+        help="Path to an existing SQLite HistoryStore database. JSON history files are not supported.",
+    )
+    migrate_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Run the pending migrations (cannot be undone). Without it the command is a dry run that writes nothing.",
+    )
+    migrate_parser.set_defaults(func=cmd_history_migrate)
 
     # 6. quarantine
     quarantine_parser = subparsers.add_parser(

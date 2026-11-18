@@ -1,13 +1,13 @@
 usage: sot-validator reconcile [-h] [--snapshot-dir SNAPSHOT_DIR] [--output-dir OUTPUT_DIR]
                                [--vcenter-json VCENTER_JSON] [--snmp-fixture SNMP_FIXTURE]
                                [--arp-json ARP_JSON] [--icmp-json ICMP_JSON]
-                               [--evaluation-time GENERATED_AT]
-                               [--site-ids SITE_IDS [SITE_IDS ...]] [--all-sites]
-                               [--batch-size BATCH_SIZE] [--rate-limit RATE_LIMIT] [--no-resume]
-                               [--fixtures] [--num-sites NUM_SITES] [--fixture-path FIXTURE_PATH]
-                               [--sql-dump SQL_DUMP] [--sqlite-path SQLITE_PATH]
-                               [--csv-dir CSV_DIR] [--json-export JSON_EXPORT]
-                               [--scrape-url SCRAPE_URL]
+                               [--evaluation-time GENERATED_AT] [--oui-dir OUI_DIR]
+                               [--exclude-randomized-macs] [--site-ids SITE_IDS [SITE_IDS ...]]
+                               [--all-sites] [--batch-size BATCH_SIZE] [--rate-limit RATE_LIMIT]
+                               [--no-resume] [--fixtures] [--num-sites NUM_SITES]
+                               [--fixture-path FIXTURE_PATH] [--sql-dump SQL_DUMP]
+                               [--sqlite-path SQLITE_PATH] [--csv-dir CSV_DIR]
+                               [--json-export JSON_EXPORT] [--scrape-url SCRAPE_URL]
 
 options:
   -h, --help            show this help message and exit
@@ -26,6 +26,15 @@ options:
                         Optional path to live ICMP observations JSON.
   --evaluation-time, --generated-at GENERATED_AT
                         Optional ISO-8601 timestamp for the reconciliation report.
+  --oui-dir OUI_DIR     Directory of IEEE MA-L/MA-M/MA-S CSV exports to load (every *.csv, non-
+                        recursive); adds observed_mac_vendor/observed_mac_class to the report JSON
+                        and discrepancy CSV (default: no OUI annotation).
+  --exclude-randomized-macs
+                        Leave untracked records whose MAC is locally-administered with no OUI
+                        match (randomised) out of the shadow-IT counts and onboarding templates,
+                        listing them under excluded_randomized_mac_discrepancies in the report
+                        JSON; ATTRIBUTE_MISMATCH is never excluded (default: off, every MAC is
+                        counted).
   --site-ids SITE_IDS [SITE_IDS ...]
                         Target site IDs (comma-separated or space-separated, e.g.
                         site-001,site-002).
