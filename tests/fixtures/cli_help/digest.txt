@@ -1,0 +1,45 @@
+usage: sot-validator digest [-h] [--previous-results PREVIOUS_RESULTS]
+                            [--current-results CURRENT_RESULTS]
+                            [--previous-quality PREVIOUS_QUALITY]
+                            [--current-quality CURRENT_QUALITY] [--previous-certs PREVIOUS_CERTS]
+                            [--current-certs CURRENT_CERTS] [--previous-fleet PREVIOUS_FLEET]
+                            [--current-fleet CURRENT_FLEET] [--previous-drift PREVIOUS_DRIFT]
+                            [--current-drift CURRENT_DRIFT] [--top-n TOP_N]
+                            [--output-dir OUTPUT_DIR] [--send] [--dry-run]
+                            [--policy {on_change,always}]
+
+options:
+  -h, --help            show this help message and exit
+  --previous-results PREVIOUS_RESULTS
+                        Previous run: validation_results.json (stale records).
+  --current-results CURRENT_RESULTS
+                        Current run: validation_results.json (stale records).
+  --previous-quality PREVIOUS_QUALITY
+                        Previous run: JSON written by `quality --output-json` (data-quality
+                        errors).
+  --current-quality CURRENT_QUALITY
+                        Current run: JSON written by `quality --output-json` (data-quality
+                        errors).
+  --previous-certs PREVIOUS_CERTS
+                        Previous run: JSON written by `cert-report --output-json` (certificates).
+  --current-certs CURRENT_CERTS
+                        Current run: JSON written by `cert-report --output-json` (certificates).
+  --previous-fleet PREVIOUS_FLEET
+                        Previous run: fleet-summary.json (site health drops).
+  --current-fleet CURRENT_FLEET
+                        Current run: fleet-summary.json (site health drops).
+  --previous-drift PREVIOUS_DRIFT
+                        Previous run: JSON written by `diff-scans --output-json` (discovery
+                        drift).
+  --current-drift CURRENT_DRIFT
+                        Current run: JSON written by `diff-scans --output-json` (discovery drift).
+  --top-n TOP_N         New items listed per category (default: 10).
+  --output-dir OUTPUT_DIR
+                        Also write digest.txt, digest.md, digest.html and digest.json here
+                        (created if missing).
+  --send                Deliver to the [digest.smtp] / [[digest.webhooks]] targets of the global
+                        --config.
+  --dry-run             With --send: print the targets, policy decision and message; read no
+                        secret, open no socket.
+  --policy {on_change,always}
+                        Send policy for --send (default: [digest] policy, else on_change).
