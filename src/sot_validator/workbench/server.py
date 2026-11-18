@@ -49,6 +49,7 @@ from sot_validator.topology.device_types import (
     normalize_mac_address,
 )
 from sot_validator.topology.graph import TopologyGraphBuilder
+from sot_validator.workbench.quality_view import build_quality_payload
 from sot_validator.workbench.ui import render_workbench_html
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -1251,6 +1252,16 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
                     )
                     payload = graph.to_dict()
                     payload["mermaid"] = graph.to_mermaid()
+                self._send_json(200, payload)
+                return
+
+            if route == "/api/quality":
+                rule = query["rule"][0] if query.get("rule") else None
+                severity = query["severity"][0] if query.get("severity") else None
+                with self.server.state._lock:
+                    payload = build_quality_payload(
+                        self.server.state.site, rule=rule, severity=severity
+                    )
                 self._send_json(200, payload)
                 return
 

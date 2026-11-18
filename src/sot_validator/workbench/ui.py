@@ -11,6 +11,11 @@ from typing import TYPE_CHECKING, Any, Optional
 from sot_validator.models import EquipmentCategory, ValidationClassification
 from sot_validator.topology.device_types import VALID_DEVICE_ROLES
 from sot_validator.topology.graph import TopologyGraph, TopologyGraphBuilder
+from sot_validator.workbench.quality_view import (
+    QUALITY_CSS,
+    QUALITY_SCRIPT,
+    render_quality_section,
+)
 
 if TYPE_CHECKING:
     from sot_validator.workbench.server import WorkbenchState
@@ -908,6 +913,7 @@ def render_workbench_html(
     with state._lock:
         payload = state.get_state_payload(audit_limit=100)
         graph = TopologyGraphBuilder().build(state.site, state.results)
+        quality_section_html = render_quality_section(state.site)
     site_dict = payload["site"]
     results_list = payload["results"]
     templates_list = payload["templates"]
@@ -1148,6 +1154,8 @@ def render_workbench_html(
     mermaid_html = _esc(topology_payload["mermaid"])
     v2_script = _WORKBENCH_V2_SCRIPT
     bulk_import_script = _BULK_IMPORT_SCRIPT
+    quality_css = QUALITY_CSS
+    quality_script = QUALITY_SCRIPT
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -1481,7 +1489,7 @@ th {{ background: var(--panel-alt); font-weight: 600; }}
 }}
 #import-preview-table {{ min-width: 760px; }}
 #import-preview-table td {{ overflow-wrap: break-word; }}
-</style>
+{quality_css}</style>
 </head>
 <body>
 <header>
@@ -1551,6 +1559,7 @@ th {{ background: var(--panel-alt); font-weight: 600; }}
     <button type="button" class="tab-btn" data-tab="tab-vlans" onclick="switchTab('tab-vlans')">VLAN &amp; Subnet Manager</button>
     <button type="button" class="tab-btn" data-tab="tab-audit-log" onclick="switchTab('tab-audit-log')">Audit Log</button>
     <button type="button" class="tab-btn" data-tab="tab-import" onclick="switchTab('tab-import')">Bulk Import</button>
+    <button type="button" class="tab-btn" data-tab="tab-quality" onclick="switchTab('tab-quality')">Data Quality</button>
   </nav>
 
   <!-- 2. Modifiable Inventory Table Tab -->
@@ -1821,6 +1830,9 @@ th {{ background: var(--panel-alt); font-weight: 600; }}
       </table>
     </div>
   </section>
+
+  <!-- 7. Data Quality Tab -->
+  {quality_section_html}
 </div>
 
 <!-- Inline Item Edit Modal -->
@@ -2114,6 +2126,7 @@ function renderState(state) {{
   applyInventoryFilters();
   renderSwitchFaceplate();
   refreshTopologyMap();
+  refreshQualityFindings();
 }}
 
 function applyInventoryFilters() {{
@@ -2327,6 +2340,7 @@ async function submitVlanForm(ev) {{
 }}
 {v2_script}
 {bulk_import_script}
+{quality_script}
 </script>
 </body>
 </html>

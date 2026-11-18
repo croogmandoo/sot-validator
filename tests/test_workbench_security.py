@@ -408,6 +408,7 @@ def test_get_routes_stay_unauthenticated() -> None:
             "/api/state",
             "/api/topology",
             "/api/audit-log",
+            "/api/quality",
         ):
             status, _headers, _raw = _http("GET", f"{base_url}{path}")
             assert status == 200, path
@@ -589,7 +590,9 @@ def test_loopback_host_headers_are_allowed(host_header: str) -> None:
         assert status == 200
 
 
-@pytest.mark.parametrize("path", ["/api/health", "/", "/api/state", "/api/audit-log"])
+@pytest.mark.parametrize(
+    "path", ["/api/health", "/", "/api/state", "/api/audit-log", "/api/quality"]
+)
 def test_foreign_host_header_is_rejected_on_get(path: str) -> None:
     with _live() as (base_url, server, _state):
         port = server.server_address[1]
