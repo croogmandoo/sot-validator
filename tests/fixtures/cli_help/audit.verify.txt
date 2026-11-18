@@ -1,0 +1,8 @@
+usage: sot-validator audit verify [-h] --curation-db CURATION_DB [--anchor ANCHOR]
+
+options:
+  -h, --help            show this help message and exit
+  --curation-db CURATION_DB
+                        Curation SQLite database to verify (opened read-only).
+  --anchor ANCHOR       External anchor COUNT:HASH, as printed by `audit head`, the chain must
+                        still match.

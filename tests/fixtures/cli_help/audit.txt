@@ -1,0 +1,11 @@
+usage: sot-validator audit [-h] {verify,head} ...
+
+positional arguments:
+  {verify,head}
+    verify       Walk the audit-log hash chain and report the first break (exit 0 intact, 1 broken
+                 or unchained).
+    head         Print the audit-log chain head as COUNT:HASH for use as a later `audit verify
+                 --anchor`.
+
+options:
+  -h, --help     show this help message and exit

@@ -1,0 +1,18 @@
+usage: sot-validator power blast-radius [-h] --snapshot SNAPSHOT --power-map POWER_MAP
+                                        [--site-id SITE_ID] [--output-json OUTPUT_JSON]
+                                        [--output-md OUTPUT_MD] [--ups UPS]
+
+options:
+  -h, --help            show this help message and exit
+  --snapshot SNAPSHOT   Site JSON snapshot file or SnapshotStore directory with the site's UPS
+                        equipment.
+  --power-map POWER_MAP
+                        Operator power map: .json (list or {"feeds": [...]}) or .csv (device_id,
+                        psu, source_id, source_type, outlet).
+  --site-id SITE_ID     Site ID to select from --snapshot (default: the first site).
+  --output-json OUTPUT_JSON
+                        Output path for the power-dependency report JSON.
+  --output-md OUTPUT_MD
+                        Output path for the power-dependency report Markdown.
+  --ups UPS             Limit the blast-radius section to this UPS ID (default: every UPS source
+                        in the map).
