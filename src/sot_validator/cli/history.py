@@ -14,6 +14,12 @@ from sot_validator.cli._common import (
     _open_history_store,
     _parse_str_list,
 )
+from sot_validator.cli._config import (
+    DEFAULT_HISTORY_MIN_CONSECUTIVE_STALE,
+    DEFAULT_QUARANTINE_MIN_STALE_RUNS,
+    fleet_config,
+    resolve_policy_value,
+)
 from sot_validator.config import ConfigError, load_config
 from sot_validator.extraction import SnapshotStore
 from sot_validator.history import (
@@ -58,7 +64,12 @@ def cmd_history(args: argparse.Namespace) -> int:
         runs = store.list_runs()
         streaks = store.list_streaks(
             site_id=args.site_id,
-            min_consecutive_stale=args.min_consecutive_stale,
+            min_consecutive_stale=resolve_policy_value(
+                args,
+                "min_consecutive_stale",
+                "quarantine_min_stale_runs",
+                DEFAULT_HISTORY_MIN_CONSECUTIVE_STALE,
+            ),
         )
         drift_run_id = (
             recorded_run.run_id
@@ -130,10 +141,19 @@ def cmd_history_prune(args: argparse.Namespace) -> int:
         )
     if not db_path.is_file():
         return _prune_error(f"--db-path {db_path}: history database does not exist")
-    try:
-        config = load_config(args.config)
-    except ConfigError as exc:
-        return _prune_error(str(exc))
+    # Its own --config wins; otherwise reuse the global one main() already loaded.
+    if getattr(args, "config", None) is not None:
+        try:
+            config = load_config(args.config)
+        except ConfigError as exc:
+            return _prune_error(str(exc))
+    else:
+        config = fleet_config(args)
+        if config is None:
+            return _prune_error(
+                "history-prune needs a fleet TOML: pass --config PATH to history-prune "
+                "or the global sot-validator --config PATH"
+            )
     policy = RetentionPolicy(
         max_age_days=config.retention.max_age_days,
         max_runs_per_site=config.retention.max_runs_per_site,
@@ -165,7 +185,12 @@ def cmd_quarantine(args: argparse.Namespace) -> int:
             manifest.policy.allow_protected_override = True
     else:
         policy = QuarantinePolicy(
-            min_consecutive_stale_runs=args.min_consecutive_stale_runs,
+            min_consecutive_stale_runs=resolve_policy_value(
+                args,
+                "min_consecutive_stale_runs",
+                "quarantine_min_stale_runs",
+                DEFAULT_QUARANTINE_MIN_STALE_RUNS,
+            ),
             min_stale_days=args.min_stale_days,
             min_confidence=args.min_confidence,
             protected_item_ids=_parse_str_list(args.protected_item_ids),
@@ -287,8 +312,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     history_parser.add_argument(
         "--min-consecutive-stale",
         type=int,
-        default=0,
-        help="Minimum consecutive stale runs filter when listing item streaks (default: 0).",
+        default=None,
+        help=(
+            "Minimum consecutive stale runs filter when listing item streaks "
+            "(default: 0, or [policy] quarantine_min_stale_runs from --config)."
+        ),
     )
     history_parser.add_argument(
         "--export-json",
@@ -333,8 +361,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     prune_parser.add_argument(
         "--config",
         type=Path,
-        required=True,
-        help="Fleet TOML configuration file whose [retention] table sets max_age_days and max_runs_per_site.",
+        default=None,
+        help=(
+            "Fleet TOML configuration file whose [retention] table sets max_age_days and "
+            "max_runs_per_site. When omitted, the global sot-validator --config file is used."
+        ),
     )
     prune_parser.add_argument(
         "--apply",
@@ -397,8 +428,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     quarantine_parser.add_argument(
         "--min-consecutive-stale-runs",
         type=int,
-        default=3,
-        help="Minimum consecutive stale runs required for quarantine graduation (default: 3).",
+        default=None,
+        help=(
+            "Minimum consecutive stale runs required for quarantine graduation "
+            "(default: 3, or [policy] quarantine_min_stale_runs from --config)."
+        ),
     )
     quarantine_parser.add_argument(
         "--min-stale-days",
