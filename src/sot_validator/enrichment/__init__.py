@@ -8,6 +8,9 @@ from sot_validator.enrichment.oui import (
     classify_mac,
     is_locally_administered,
     is_multicast,
+    is_randomized_mac,
+    load_oui_directory,
+    mac_annotation,
 )
 
 __all__ = [
@@ -16,4 +19,7 @@ __all__ = [
     "classify_mac",
     "is_locally_administered",
     "is_multicast",
+    "is_randomized_mac",
+    "load_oui_directory",
+    "mac_annotation",
 ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from sot_validator.topology.device_types import normalize_mac_address
 from sot_validator.topology.identifier import KNOWN_OUI_VENDORS
@@ -148,3 +148,32 @@ class OuiRegistry:
                 role_hint=builtin[1],
             )
         return None
+
+
+def load_oui_directory(oui_dir: Optional[Path | str]) -> OuiRegistry:
+    """Build the registry from every ``*.csv`` directly in ``oui_dir``, or the builtin table."""
+    if oui_dir is None:
+        return OuiRegistry()
+    directory = Path(oui_dir)
+    if not directory.is_dir():
+        raise ValueError("not an existing directory")
+    paths = sorted(path for path in directory.glob("*.csv") if path.is_file())
+    if not paths:
+        raise ValueError("directory contains no *.csv IEEE OUI files")
+    return OuiRegistry.from_ieee_csv(*paths)
+
+
+def is_randomized_mac(registry: OuiRegistry, mac: object) -> bool:
+    """Return True for a locally-administered MAC that has no OUI match in ``registry``."""
+    return classify_mac(mac) == MAC_CLASS_LOCALLY_ADMINISTERED and registry.lookup(mac) is None
+
+
+def mac_annotation(registry: OuiRegistry, mac: object) -> dict[str, Any]:
+    """Return ``{"mac", "vendor", "class"}`` for ``mac``; ``mac`` is None when it is invalid."""
+    mac_class = classify_mac(mac)
+    match = registry.lookup(mac)
+    return {
+        "mac": None if mac_class == MAC_CLASS_INVALID else normalize_mac_address(mac),
+        "vendor": match.vendor if match else None,
+        "class": mac_class,
+    }
