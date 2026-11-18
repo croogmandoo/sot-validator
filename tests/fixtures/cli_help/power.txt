@@ -1,0 +1,10 @@
+usage: sot-validator power [-h] {blast-radius,risk} ...
+
+positional arguments:
+  {blast-radius,risk}
+    blast-radius       Report which devices lose all power or redundancy when a UPS fails.
+    risk               Rank UPS units by health severity times the critical devices they would
+                       take down.
+
+options:
+  -h, --help           show this help message and exit

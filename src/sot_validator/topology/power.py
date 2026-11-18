@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 import csv
 from dataclasses import dataclass, field
 import json
@@ -496,12 +496,27 @@ def rank_power_risk(
     return entries
 
 
-def generate_power_json_report(site: Site, graph: PowerDependencyGraph) -> str:
-    """Return a deterministic JSON power-dependency report for ``site``."""
+def _report_ups_ids(
+    graph: PowerDependencyGraph, ups_ids: Optional[Sequence[str]]
+) -> list[str]:
+    return graph.ups_sources() if ups_ids is None else list(ups_ids)
+
+
+def generate_power_json_report(
+    site: Site,
+    graph: PowerDependencyGraph,
+    *,
+    ups_ids: Optional[Sequence[str]] = None,
+) -> str:
+    """Return a deterministic JSON power-dependency report for ``site``.
+
+    ``ups_ids`` limits the blast-radius section to those UPS IDs (default: every UPS source).
+    """
     payload = {
         "site_id": site.site_id,
         "ups_blast_radius": [
-            graph.blast_radius(ups_id).to_dict() for ups_id in graph.ups_sources()
+            graph.blast_radius(ups_id).to_dict()
+            for ups_id in _report_ups_ids(graph, ups_ids)
         ],
         "single_fed_critical": find_single_fed_critical(site, graph),
         "false_redundancy": find_false_redundancy(graph),
@@ -521,13 +536,21 @@ def _md_list(items: Iterable[str]) -> list[str]:
     return lines or ["None"]
 
 
-def generate_power_markdown_report(site: Site, graph: PowerDependencyGraph) -> str:
-    """Return a deterministic Markdown power-dependency report for ``site``."""
+def generate_power_markdown_report(
+    site: Site,
+    graph: PowerDependencyGraph,
+    *,
+    ups_ids: Optional[Sequence[str]] = None,
+) -> str:
+    """Return a deterministic Markdown power-dependency report for ``site``.
+
+    ``ups_ids`` limits the blast-radius section to those UPS IDs (default: every UPS source).
+    """
     lines = [f"# Power Dependency Report: {_md_cell(site.site_id)}", "", "## UPS Blast Radius", ""]
-    ups_ids = graph.ups_sources()
-    if not ups_ids:
+    selected = _report_ups_ids(graph, ups_ids)
+    if not selected:
         lines.extend(["None", ""])
-    for ups_id in ups_ids:
+    for ups_id in selected:
         radius = graph.blast_radius(ups_id)
         lines.extend([f"### UPS {_md_cell(ups_id)}", "", "Loses all power:", ""])
         lines.extend(_md_list(radius.loses_all_power))
@@ -538,5 +561,53 @@ def generate_power_markdown_report(site: Site, graph: PowerDependencyGraph) -> s
     lines.extend(_md_list(find_single_fed_critical(site, graph)))
     lines.extend(["", "### False redundancy", ""])
     lines.extend(_md_list(find_false_redundancy(graph)))
+    lines.append("")
+    return "\n".join(lines)
+
+
+def generate_power_risk_json_report(
+    site: Site,
+    graph: PowerDependencyGraph,
+    ups_health_results: Iterable[UpsHealthRecord],
+) -> str:
+    """Return a deterministic JSON UPS power-risk ranking report for ``site``."""
+    payload = {
+        "site_id": site.site_id,
+        "risk": [
+            entry.to_dict() for entry in rank_power_risk(site, ups_health_results, graph)
+        ],
+        "false_redundancy": find_false_redundancy(graph),
+        "single_fed_critical": find_single_fed_critical(site, graph),
+    }
+    return json.dumps(payload, indent=2, sort_keys=True)
+
+
+def generate_power_risk_markdown_report(
+    site: Site,
+    graph: PowerDependencyGraph,
+    ups_health_results: Iterable[UpsHealthRecord],
+) -> str:
+    """Return a deterministic Markdown UPS power-risk ranking report for ``site``."""
+    lines = [f"# Power Risk Report: {_md_cell(site.site_id)}", "", "## UPS Risk Ranking", ""]
+    entries = rank_power_risk(site, ups_health_results, graph)
+    if entries:
+        lines.append("| Rank | UPS | Health | Severity | Score | Single-fed critical devices |")
+        lines.append("|---|---|---|---|---|---|")
+        for rank, entry in enumerate(entries, start=1):
+            cells = (
+                rank,
+                entry.ups_id,
+                entry.health_status,
+                entry.severity,
+                entry.score,
+                ", ".join(entry.single_fed_critical) or "None",
+            )
+            lines.append("| " + " | ".join(_md_cell(cell) for cell in cells) + " |")
+    else:
+        lines.append("None")
+    lines.extend(["", "## False redundancy", ""])
+    lines.extend(_md_list(find_false_redundancy(graph)))
+    lines.extend(["", "## Single-fed critical devices", ""])
+    lines.extend(_md_list(find_single_fed_critical(site, graph)))
     lines.append("")
     return "\n".join(lines)
