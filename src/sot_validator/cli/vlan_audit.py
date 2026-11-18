@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 import json
 from pathlib import Path
+import re
 from typing import Any, Optional
 
 from sot_validator.cli._common import (
@@ -17,7 +18,11 @@ from sot_validator.cli._common import (
     _load_single_site_snapshot,
     _write_report_outputs,
 )
-from sot_validator.discovery.router_tables import RouterArpRecord, _coerce_datetime
+from sot_validator.discovery.router_tables import (
+    RouterArpRecord,
+    _coerce_datetime,
+    _vlan_from_interface,
+)
 from sot_validator.models import Site
 from sot_validator.quality import (
     VALID_SEVERITIES,
@@ -31,6 +36,7 @@ from sot_validator.reporting.generators import _escape_md_cell
 from sot_validator.topology.fdb_mapper import FdbEntry, PortClassificationResult
 
 _ROUTER_ARP_KEYS = ("arp", "records", "arp_records")
+_DIGITS_ONLY = re.compile(r"[0-9]+")
 
 
 def _read_json(path: Path) -> Any:
@@ -54,14 +60,30 @@ def _optional_str(data: Mapping[str, Any], key: str, default: Optional[str]) -> 
     return value
 
 
+def _check_vlan_digits(value: Any, field_name: str) -> None:
+    """Reject a digit-string VLAN ID too long for ``int()``, which the auditor would crash on."""
+    if value is None or isinstance(value, (bool, int)):
+        return
+    text = str(value).strip()
+    if _DIGITS_ONLY.fullmatch(text):
+        try:
+            int(text)
+        except ValueError as exc:
+            raise ValueError(f"{field_name} is not a usable VLAN ID ({len(text)} digits)") from exc
+
+
 def _is_vlan_value(value: Any) -> bool:
-    return isinstance(value, (str, int)) and not isinstance(value, bool)
+    if not isinstance(value, (str, int)) or isinstance(value, bool):
+        return False
+    _check_vlan_digits(value, "vlan_ids item")
+    return True
 
 
 def _fdb_entry(data: Mapping[str, Any]) -> FdbEntry:
     vlan_id = data.get("vlan_id")
     if vlan_id is not None and not _is_vlan_value(vlan_id):
         raise ValueError(f"vlan_id must be a string, integer or null, got {vlan_id!r}")
+    _check_vlan_digits(vlan_id, "vlan_id")
     return FdbEntry.from_dict(data)
 
 
@@ -127,7 +149,25 @@ def _load_router_arp(path: Path) -> list[RouterArpRecord]:
                 f"Expected a JSON list or one of the keys {', '.join(_ROUTER_ARP_KEYS)} in {path}"
             )
         key = found[0]
-    return [RouterArpRecord.from_dict(item) for item in _json_object_list(raw, key=key, path=path)]
+    records = [RouterArpRecord.from_dict(item) for item in _json_object_list(raw, key=key, path=path)]
+    for record in records:
+        _check_vlan_digits(record.vlan_id, "vlan_id")
+        try:
+            _vlan_from_interface(record.interface)
+        except ValueError as exc:
+            raise ValueError("interface has a VLAN number too long to read") from exc
+    return records
+
+
+def _check_site_vlans(site: Site) -> None:
+    """Reject SoT VLAN, subnet and port VLAN IDs the auditor cannot compare."""
+    for vlan in site.vlans:
+        _check_vlan_digits(vlan.vlan_id, "VLAN vlan_id")
+    for subnet in site.subnets:
+        _check_vlan_digits(subnet.vlan_id, f"subnet {subnet.subnet_id!r} vlan_id")
+    for device in site.devices:
+        for port in device.ports:
+            _check_vlan_digits(port.vlan_id, f"port {port.port_id!r} vlan_id")
 
 
 def _load_dhcp_scopes(path: Path) -> list[DhcpScope]:
@@ -209,6 +249,7 @@ def _render_vlan_audit_markdown(report: dict[str, Any]) -> str:
 def cmd_vlan_audit(args: argparse.Namespace) -> int:
     try:
         site: Site = _load_single_site_snapshot(Path(args.snapshot), args)
+        _check_site_vlans(site)
     except INPUT_ERRORS as exc:
         return _input_error("--snapshot", args.snapshot, exc)
     if args.site_id is not None and site.site_id != args.site_id:

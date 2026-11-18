@@ -13,6 +13,7 @@ from sot_validator.models import NetworkDevice, Port, Site, Subnet, VLAN
 from sot_validator.quality import VALID_SEVERITIES, VLAN_RULE_NAMES
 
 SITE_ID = "site-001"
+LONG_VLAN = "1" * 5000
 REPORT_KEYS = {
     "site_id",
     "rules",
@@ -46,6 +47,17 @@ def _site(site_id: str = SITE_ID) -> Site:
             Subnet(subnet_id="sub-20", site_id=site_id, cidr="10.1.20.0/24", vlan_id="20"),
         ],
     )
+
+
+def _site_with_long_vlan(record: str) -> Site:
+    site = _site()
+    if record == "vlan":
+        site.vlans[0].vlan_id = LONG_VLAN
+    elif record == "subnet":
+        site.subnets[0].vlan_id = LONG_VLAN
+    else:
+        site.devices[0].ports[0].vlan_id = LONG_VLAN
+    return site
 
 
 def _write(path: Path, payload: Any) -> Path:
@@ -370,6 +382,27 @@ def test_markdown_lists_no_skipped_rules(tmp_path: Path, capsys: pytest.CaptureF
 
 ERROR_CASES = [
     pytest.param("--snapshot", "missing.json", None, id="snapshot-missing"),
+    pytest.param("--snapshot", "long.json", _site_with_long_vlan("vlan"), id="snapshot-long-vlan-id"),
+    pytest.param(
+        "--snapshot", "long.json", _site_with_long_vlan("subnet"), id="snapshot-long-subnet-vlan-id"
+    ),
+    pytest.param("--snapshot", "long.json", _site_with_long_vlan("port"), id="snapshot-long-port-vlan-id"),
+    pytest.param(
+        "--fdb", "fdb.json", [_observation(LONG_VLAN)], id="fdb-entry-long-vlan-id",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json", {"ports": [{**_access("10"), "vlan_ids": [LONG_VLAN]}]},
+        id="fdb-ports-long-vlan-ids-item",
+    ),
+    pytest.param(
+        "--router-arp", "arp.json", [{"ip": "10.1.10.5", "interface": "ge-0/0/1", "vlan_id": LONG_VLAN}],
+        id="router-arp-long-vlan-id",
+    ),
+    pytest.param(
+        "--router-arp", "arp.json",
+        [{"ip": "10.1.10.5", "interface": f"vlan{LONG_VLAN}", "vlan_id": "20"}],
+        id="router-arp-long-interface-vlan",
+    ),
     pytest.param("--snapshot", "site.json", "site-id", id="snapshot-unknown-site-id"),
     pytest.param("--fdb", "fdb.json", [{"entries": []}], id="fdb-missing-device-id"),
     pytest.param(
@@ -430,6 +463,8 @@ def test_input_errors_print_one_line_and_write_nothing(
     if flag == "--snapshot":
         if payload == "site-id":
             argv += ["--snapshot", str(_snapshot(tmp_path)), "--site-id", "site-999"]
+        elif isinstance(payload, Site):
+            argv += ["--snapshot", str(_write(path, payload))]
         else:
             argv += ["--snapshot", str(path)]
     else:
