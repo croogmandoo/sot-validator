@@ -208,7 +208,7 @@ def test_manifest_redaction_and_config_hash(tmp_path):
     manifest = _manifest(
         config_sha256=file_sha256(config),
         sites=[
-            SiteStatus("site-001", "failed", SecretValue("hunter2-secret-value")),
+            SiteStatus("site-001", "failed", SecretValue("hunter2-secret-value", "f.toml", "vcenters[0]", "password")),
             SiteStatus("site-002", "failed", {"password": "pw-secret-value", "note": "x"}),
             SiteStatus("site-003", "ok", {"detail": {"api_token": "tok-secret-value"}}),
         ],
