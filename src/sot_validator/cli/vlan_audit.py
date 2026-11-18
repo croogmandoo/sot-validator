@@ -54,6 +54,28 @@ def _optional_str(data: Mapping[str, Any], key: str, default: Optional[str]) -> 
     return value
 
 
+def _is_vlan_value(value: Any) -> bool:
+    return isinstance(value, (str, int)) and not isinstance(value, bool)
+
+
+def _fdb_entry(data: Mapping[str, Any]) -> FdbEntry:
+    vlan_id = data.get("vlan_id")
+    if vlan_id is not None and not _is_vlan_value(vlan_id):
+        raise ValueError(f"vlan_id must be a string, integer or null, got {vlan_id!r}")
+    return FdbEntry.from_dict(data)
+
+
+def _port_classification(data: Mapping[str, Any]) -> PortClassificationResult:
+    """Build a classification, rejecting a non-list `vlan_ids` that `from_dict` would split."""
+    vlan_ids = data.get("vlan_ids", [])
+    if not isinstance(vlan_ids, list):
+        raise ValueError(f"vlan_ids must be a JSON list, got {vlan_ids!r}")
+    for value in vlan_ids:
+        if not _is_vlan_value(value):
+            raise ValueError(f"vlan_ids items must be strings or integers, got {value!r}")
+    return PortClassificationResult.from_dict(data)
+
+
 def _fdb_observation(data: Mapping[str, Any], path: Path) -> FdbObservation:
     source = _optional_str(data, "source", "fdb")
     if source is None:
@@ -62,11 +84,11 @@ def _fdb_observation(data: Mapping[str, Any], path: Path) -> FdbObservation:
         device_id=data["device_id"],
         observed_at=_coerce_datetime(data.get("observed_at"), "observed_at"),
         entries=[
-            FdbEntry.from_dict(item)
+            _fdb_entry(item)
             for item in _object_items(data.get("entries", []), field_name="entries", path=path)
         ],
         port_classifications=[
-            PortClassificationResult.from_dict(item)
+            _port_classification(item)
             for item in _object_items(
                 data.get("port_classifications", []),
                 field_name="port_classifications",
@@ -83,7 +105,7 @@ def _load_fdb(path: Path) -> list[FdbObservation]:
     if isinstance(raw, Mapping) and "ports" in raw and "observations" not in raw:
         by_device: dict[str, list[PortClassificationResult]] = defaultdict(list)
         for item in _object_items(raw["ports"], field_name="ports", path=path):
-            result = PortClassificationResult.from_dict(item)
+            result = _port_classification(item)
             by_device[result.device_id].append(result)
         return [
             FdbObservation(device_id=device_id, port_classifications=by_device[device_id])

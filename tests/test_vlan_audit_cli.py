@@ -200,6 +200,13 @@ def test_map_ports_report_is_accepted_unchanged(
     assert unobserved[0]["evidence"]["covered_switches"] == ["sw-01", "sw-02"]
 
 
+def test_integer_vlan_ids_are_accepted(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    payload = {"ports": [{**_access("10"), "vlan_ids": [30]}]}
+    report = _report(tmp_path, capsys, "--fdb", str(_write(tmp_path / "ports.json", payload)))
+    mismatch = [f for f in report["findings"] if f["rule"] == "access_port_vlan_mismatch"]
+    assert [f["evidence"]["observed_vlan_ids"] for f in mismatch] == [["30"]]
+
+
 def test_arp_records_envelope_is_accepted(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -373,6 +380,31 @@ ERROR_CASES = [
     pytest.param("--fdb", "fdb.json", [{"device_id": "sw-01", "source": False}], id="fdb-source-not-string"),
     pytest.param("--fdb", "fdb.json", {"ports": "x"}, id="fdb-map-ports-not-list"),
     pytest.param("--fdb", "fdb.json", {"entries": []}, id="fdb-wrong-shape"),
+    pytest.param(
+        "--fdb", "fdb.json", {"ports": [{**_access("10"), "vlan_ids": "10"}]},
+        id="fdb-map-ports-vlan-ids-string",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json",
+        {"observations": [_observation(port_classifications=[{**_access("10"), "vlan_ids": "10"}])]},
+        id="fdb-observations-vlan-ids-string",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json", {"ports": [{**_access("10"), "vlan_ids": ["10", None]}]},
+        id="fdb-vlan-ids-null-item",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json", {"ports": [{**_access("10"), "vlan_ids": [True]}]},
+        id="fdb-vlan-ids-bool-item",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json", {"ports": [{**_access("10"), "vlan_ids": [["10"]]}]},
+        id="fdb-vlan-ids-nested-list",
+    ),
+    pytest.param(
+        "--fdb", "fdb.json", [{**_observation(), "entries": [{**_entry("10"), "vlan_id": [10]}]}],
+        id="fdb-entry-vlan-id-list",
+    ),
     pytest.param("--fdb", "fdb.json", ["not-an-object"], id="fdb-non-object"),
     pytest.param("--router-arp", "arp.json", "{not json", id="router-arp-invalid-json"),
     pytest.param("--router-arp", "arp.json", [{"ip": "10.1.10.999"}], id="router-arp-bad-ip"),
