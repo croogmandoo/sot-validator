@@ -1,4 +1,4 @@
-"""Unified TOML fleet configuration loader with env-referenced secrets."""
+"""Unified TOML fleet configuration loader with lazily read env-referenced secrets."""
 
 from __future__ import annotations
 
@@ -38,12 +38,22 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True, repr=False)
 class SecretValue:
-    """Resolved secret whose repr and str are always redacted."""
+    """Env-referenced secret read only on `reveal()`; repr and str are always redacted."""
 
-    _value: str
+    variable: str
+    source: str
+    table: str
+    key: str
 
     def reveal(self) -> str:
-        return self._value
+        """Read the referenced environment variable now, raising `ConfigError` if unset or empty."""
+        value = os.environ.get(self.variable, "")
+        if not value:
+            raise ConfigError(
+                f"{self.source}: [{self.table}] {self.key}: "
+                f"environment variable {self.variable} is unset or empty"
+            )
+        return value
 
     def __repr__(self) -> str:
         return REDACTED
@@ -221,13 +231,17 @@ class _Table:
 
     def secret(self, key: str) -> SecretValue:
         value = self.raw(key, _MISSING)
-        if not isinstance(value, str) or ENV_REFERENCE_PATTERN.fullmatch(value) is None:
+        match = ENV_REFERENCE_PATTERN.fullmatch(value) if isinstance(value, str) else None
+        if match is None:
             raise self.error(
                 key,
                 "secret must be written as a ${env:NAME} reference; "
                 "literal values are not allowed",
             )
-        return SecretValue(self.resolve_env(key, value))
+        # The variable is only read on reveal(), so loading never needs the secret set.
+        return SecretValue(
+            variable=match.group(1), source=self.source, table=self.name, key=key
+        )
 
     def boolean(self, key: str, *, default: Any = _MISSING) -> bool:
         value = self.raw(key, default)

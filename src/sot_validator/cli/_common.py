@@ -13,6 +13,7 @@ import sys
 from typing import Any, Optional
 
 from sot_validator.classifier.engine import ClassificationEngine, ClassificationPolicy
+from sot_validator.cli._config import default_site_ids, resolve_recency_thresholds
 from sot_validator.curation import CurationStore
 from sot_validator.extraction import (
     BatchExtractor,
@@ -234,14 +235,20 @@ def _add_validation_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--active-within-days",
         type=float,
-        default=7.0,
-        help="Threshold in days within which signals are considered active (default: 7.0).",
+        default=None,
+        help=(
+            "Threshold in days within which signals are considered active "
+            "(default: 7.0, or [policy] last_seen_active_within_days from --config)."
+        ),
     )
     parser.add_argument(
         "--stale-after-days",
         type=float,
-        default=30.0,
-        help="Threshold in days beyond which inactive signals are considered stale (default: 30.0).",
+        default=None,
+        help=(
+            "Threshold in days beyond which inactive signals are considered stale "
+            "(default: 30.0, or [policy] last_seen_stale_after_days from --config)."
+        ),
     )
     parser.add_argument(
         "--evaluation-time",
@@ -265,11 +272,9 @@ def _extract_sites(
 ) -> list[Site]:
     store = SnapshotStore(snapshot_dir)
     client = _build_sot_client(args, default_to_fixtures=default_to_fixtures)
-    site_ids = (
-        None
-        if getattr(args, "all_sites", False)
-        else _parse_site_ids(getattr(args, "site_ids", None))
-    )
+    site_ids = default_site_ids(args)
+    if site_ids is None and not getattr(args, "all_sites", False):
+        site_ids = _parse_site_ids(getattr(args, "site_ids", None))
 
     if client is not None:
         extractor = BatchExtractor(
@@ -406,8 +411,7 @@ def _build_classification_engine(
     sites: Sequence[Site],
 ) -> tuple[ClassificationEngine, Optional[str]]:
     eval_time = _infer_evaluation_time(args, sites)
-    active_days = float(getattr(args, "active_within_days", 7.0))
-    stale_days = float(getattr(args, "stale_after_days", 30.0))
+    active_days, stale_days = resolve_recency_thresholds(args)
     policy = ClassificationPolicy(
         active_within_days=active_days,
         stale_after_days=stale_days,
@@ -611,8 +615,10 @@ def _load_single_site_snapshot(
         raise ValueError(f"Unsupported site snapshot format in {snap}")
 
     fallback_dir = Path(getattr(args, "output_dir", None) or "./output")
+    # Single-site commands keep their own site choice: no `--config` [[sites]] default here.
+    unconfigured = argparse.Namespace(**{**vars(args), "fleet_config": None})
     sites = _resolve_sites_for_command(
-        args, fallback_dir, default_to_fixtures=default_to_fixtures
+        unconfigured, fallback_dir, default_to_fixtures=default_to_fixtures
     )
     if not sites:
         sites = FixtureSoTClient(num_sites=1).extract_all()

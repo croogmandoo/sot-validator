@@ -51,10 +51,10 @@ options:
                         Path to a /24-scoped DHCP lease export JSON file.
   --active-within-days ACTIVE_WITHIN_DAYS
                         Threshold in days within which signals are considered active (default:
-                        7.0).
+                        7.0, or [policy] last_seen_active_within_days from --config).
   --stale-after-days STALE_AFTER_DAYS
                         Threshold in days beyond which inactive signals are considered stale
-                        (default: 30.0).
+                        (default: 30.0, or [policy] last_seen_stale_after_days from --config).
   --evaluation-time EVALUATION_TIME
                         Reference ISO-8601 UTC timestamp for signal recency evaluation.
   --include-ips, --no-include-ips

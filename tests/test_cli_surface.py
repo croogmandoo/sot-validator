@@ -132,6 +132,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["extract", "--fixtures", "--site-ids", "site-001,site-002", "--batch-size", "5"],
         {"subcommand": "extract",
+         "fleet_config_path": None,
          "snapshot_dir": Path("snapshots"),
          "site_ids": ["site-001,site-002"],
          "all_sites": False,
@@ -152,6 +153,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["validate", "--fixtures", "--output-dir", "out", "--stale-after-days", "45"],
         {"subcommand": "validate",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("out"),
          "site_ids": None,
@@ -172,7 +174,7 @@ NAMESPACE_CASES = [
          "ad_json": None,
          "dns_json": None,
          "dhcp_json": None,
-         "active_within_days": 7.0,
+         "active_within_days": None,
          "stale_after_days": 45.0,
          "evaluation_time": None,
          "include_ips": True,
@@ -182,6 +184,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["report", "--results-file", "results.json", "--html-dashboard"],
         {"subcommand": "report",
+         "fleet_config_path": None,
          "results_file": Path("results.json"),
          "input_dir": None,
          "snapshot_dir": None,
@@ -201,6 +204,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["run", "--fixtures", "--all-sites", "--evaluation-time", "2026-02-12T12:00:00Z"],
         {"subcommand": "run",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("output"),
          "html_dashboard": False,
@@ -223,8 +227,8 @@ NAMESPACE_CASES = [
          "ad_json": None,
          "dns_json": None,
          "dhcp_json": None,
-         "active_within_days": 7.0,
-         "stale_after_days": 30.0,
+         "active_within_days": None,
+         "stale_after_days": None,
          "evaluation_time": "2026-02-12T12:00:00Z",
          "include_ips": True,
          "func": "cmd_run"},
@@ -233,6 +237,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["history", "--db-path", "history.db", "--site-id", "site-001", "--min-consecutive-stale", "3"],
         {"subcommand": "history",
+         "fleet_config_path": None,
          "db_path": Path("history.db"),
          "import_json": None,
          "results_file": None,
@@ -249,6 +254,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["history-prune", "--config", "fleet.toml"],
         {"subcommand": "history-prune",
+         "fleet_config_path": None,
          "db_path": Path("history.db"),
          "config": Path("fleet.toml"),
          "apply": False,
@@ -257,15 +263,27 @@ NAMESPACE_CASES = [
         id="history-prune",
     ),
     pytest.param(
+        ["--config", "fleet.toml", "history-prune", "--db-path", "h.db"],
+        {"subcommand": "history-prune",
+         "fleet_config_path": Path("fleet.toml"),
+         "db_path": Path("h.db"),
+         "config": None,
+         "apply": False,
+         "now": None,
+         "func": "cmd_history_prune"},
+        id="global-config-history-prune",
+    ),
+    pytest.param(
         ["quarantine", "--results-file", "results.json", "--approve-all", "--reviewer", "ops"],
         {"subcommand": "quarantine",
+         "fleet_config_path": None,
          "results_file": Path("results.json"),
          "db_path": None,
          "snapshot_dir": None,
          "manifest_in": None,
          "output": Path("output/approval_manifest.json"),
          "csv_out": None,
-         "min_consecutive_stale_runs": 3,
+         "min_consecutive_stale_runs": None,
          "min_stale_days": 30.0,
          "min_confidence": 0.85,
          "protected_item_ids": None,
@@ -287,6 +305,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["remediate", "--execute-approved-plan", "manifest.json", "--confirm-write"],
         {"subcommand": "remediate",
+         "fleet_config_path": None,
          "manifest": Path("manifest.json"),
          "output_dir": Path("output"),
          "journal_path": None,
@@ -308,6 +327,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["reconcile", "--fixtures", "--arp-json", "arp.json"],
         {"subcommand": "reconcile",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("output"),
          "vcenter_json": None,
@@ -334,6 +354,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["campaign", "--fixtures", "--cohort-size", "4", "--webhook-format", "slack"],
         {"subcommand": "campaign",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("output"),
          "campaign_id": "campaign-run",
@@ -363,8 +384,8 @@ NAMESPACE_CASES = [
          "ad_json": None,
          "dns_json": None,
          "dhcp_json": None,
-         "active_within_days": 7.0,
-         "stale_after_days": 30.0,
+         "active_within_days": None,
+         "stale_after_days": None,
          "evaluation_time": None,
          "include_ips": True,
          "func": "cmd_campaign"},
@@ -373,6 +394,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["preflight", "--fixtures", "--pilot-sites", "site-001", "--strict"],
         {"subcommand": "preflight",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("reports"),
          "output": None,
@@ -402,6 +424,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["reclaim-ports", "--fixtures", "--dialect", "exos", "--min-inactive-runs", "2"],
         {"subcommand": "reclaim-ports",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("reports"),
          "output_file": None,
@@ -432,6 +455,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["export-modern-sot", "--fixtures", "--target-platform", "nautobot", "--include-stale"],
         {"subcommand": "export-modern-sot",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("reports"),
          "target_platform": "nautobot",
@@ -462,6 +486,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["parity-check", "--fixtures", "--waive-all", "--output-file", "parity.json"],
         {"subcommand": "parity-check",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("reports"),
          "output_file": Path("parity.json"),
@@ -493,6 +518,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["ups-health", "--fixtures", "--min-runtime-minutes", "15"],
         {"subcommand": "ups-health",
+         "fleet_config_path": None,
          "snapshot_dir": None,
          "output_dir": Path("reports"),
          "output_file": None,
@@ -523,6 +549,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["itsm", "--provider", "jira", "--project-key", "OPS", "--site-id", "site-001"],
         {"subcommand": "itsm",
+         "fleet_config_path": None,
          "output_dir": Path("reports"),
          "output": None,
          "sink_file": None,
@@ -553,6 +580,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["discover", "--cidr", "10.1.0.0/16", "--site-id", "site-001", "--fixtures"],
         {"subcommand": "discover",
+         "fleet_config_path": None,
          "cidr": "10.1.0.0/16",
          "site_id": "site-001",
          "site_name": "Discovered Site",
@@ -561,7 +589,7 @@ NAMESPACE_CASES = [
          "snapshot_dir": None,
          "gateway_octets": None,
          "tcp_ports": None,
-         "max_concurrency": 128,
+         "max_concurrency": None,
          "max_active_subnets": 32,
          "ping_timeout": 1.0,
          "tcp_timeout": 0.35,
@@ -581,6 +609,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["serve", "--host", "127.0.0.1", "--port", "0", "--check"],
         {"subcommand": "serve",
+         "fleet_config_path": None,
          "host": "127.0.0.1",
          "port": 0,
          "token": None,
@@ -614,6 +643,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["curate", "--db-path", "curation.db", "--site-id", "site-001", "--target-type", "device", "--target-id", "dev-1", "--name", "core"],
         {"subcommand": "curate",
+         "fleet_config_path": None,
          "curation_db": Path("curation.db"),
          "snapshot": None,
          "output": None,
@@ -659,6 +689,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["topology", "--fixtures", "--site-id", "site-001", "--include-unconnected-ports"],
         {"subcommand": "topology",
+         "fleet_config_path": None,
          "snapshot": None,
          "snapshot_dir": None,
          "curation_db": None,
@@ -687,6 +718,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["fingerprint", "--banners", "banners.json", "--site-id", "site-001"],
         {"subcommand": "fingerprint",
+         "fleet_config_path": None,
          "snapshot": None,
          "banners": Path("banners.json"),
          "output": None,
@@ -710,6 +742,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["map-ports", "--fdb-file", "fdb.txt", "--device-id", "dev-1"],
         {"subcommand": "map-ports",
+         "fleet_config_path": None,
          "snapshot": None,
          "fdb_file": Path("fdb.txt"),
          "device_id": "dev-1",
@@ -735,6 +768,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["diff-scans", "--baseline", "a.json", "--current", "b.json", "--output-md", "drift.md"],
         {"subcommand": "diff-scans",
+         "fleet_config_path": None,
          "baseline": Path("a.json"),
          "current": Path("b.json"),
          "curation_db": None,
@@ -748,6 +782,7 @@ NAMESPACE_CASES = [
         ["quality", "--snapshot", "a.json", "--snapshot", "b.json", "--rules", "duplicate_ip",
          "--disable", "duplicate_mac", "--output-json", "q.json"],
         {"subcommand": "quality",
+         "fleet_config_path": None,
          "snapshot": [Path("a.json"), Path("b.json")],
          "rules": ["duplicate_ip"],
          "disable": ["duplicate_mac"],
@@ -760,6 +795,7 @@ NAMESPACE_CASES = [
         ["cert-report", "--fingerprints", "banners.json", "--snapshot", "site.json",
          "--evaluation-time", "2026-01-01T00:00:00Z", "--output-md", "c.md"],
         {"subcommand": "cert-report",
+         "fleet_config_path": None,
          "fingerprints": Path("banners.json"),
          "snapshot": Path("site.json"),
          "site_id": None,
@@ -774,6 +810,7 @@ NAMESPACE_CASES = [
         ["firmware-check", "--snapshot", "site.json", "--catalog", "catalog.json",
          "--snmp-fixture", "snmp.json", "--output-json", "f.json"],
         {"subcommand": "firmware-check",
+         "fleet_config_path": None,
          "snapshot": [Path("site.json")],
          "catalog": Path("catalog.json"),
          "snmp_fixture": Path("snmp.json"),
@@ -788,6 +825,7 @@ NAMESPACE_CASES = [
          "--previous", "prev.json", "--site", "site-001", "--site", "site-002", "--output-dir", "out",
          "--evaluation-time", "2026-01-01T00:00:00Z"],
         {"subcommand": "fleet-summary",
+         "fleet_config_path": None,
          "quality": Path("q.json"),
          "cert_report": Path("c.json"),
          "firmware_check": Path("f.json"),
@@ -801,6 +839,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["oui", "lookup", "00:04:96:00:00:01", "nope", "--oui-dir", "oui", "--json"],
         {"subcommand": "oui",
+         "fleet_config_path": None,
          "oui_command": "lookup",
          "macs": ["00:04:96:00:00:01", "nope"],
          "oui_dir": Path("oui"),
@@ -811,6 +850,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["audit", "verify", "--curation-db", "c.db", "--anchor", "3:" + "a" * 64],
         {"subcommand": "audit",
+         "fleet_config_path": None,
          "audit_command": "verify",
          "curation_db": Path("c.db"),
          "anchor": "3:" + "a" * 64,
@@ -820,6 +860,7 @@ NAMESPACE_CASES = [
     pytest.param(
         ["audit", "head", "--curation-db", "c.db"],
         {"subcommand": "audit",
+         "fleet_config_path": None,
          "audit_command": "head",
          "curation_db": Path("c.db"),
          "func": "cmd_audit_head"},
@@ -829,6 +870,7 @@ NAMESPACE_CASES = [
         ["power", "blast-radius", "--snapshot", "site.json", "--power-map", "map.json",
          "--ups", "UPS-A", "--output-json", "p.json"],
         {"subcommand": "power",
+         "fleet_config_path": None,
          "power_command": "blast-radius",
          "snapshot": Path("site.json"),
          "power_map": Path("map.json"),
@@ -843,6 +885,7 @@ NAMESPACE_CASES = [
         ["power", "risk", "--snapshot", "site.json", "--power-map", "map.csv",
          "--site-id", "site-001", "--ups-health", "ups.json", "--output-md", "r.md"],
         {"subcommand": "power",
+         "fleet_config_path": None,
          "power_command": "risk",
          "snapshot": Path("site.json"),
          "power_map": Path("map.csv"),

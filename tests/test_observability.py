@@ -479,7 +479,7 @@ def test_dataclass_and_namedtuple_extras_are_redacted_by_field(fmt):
     hidden = make_dataclass("Hidden", ["name", ("blob", str, field(repr=False))])("n", "sv3")
     own = make_dataclass("Own", ["blob"], namespace={"__repr__": lambda self: "own"})("sv4")
     get_logger("x").info("m", extra={"cred": cred, "target": target, "loop": loop, "own": own,
-                                     "vc": SecretValue("sv1"), "cfg": {"h": [SecretValue("sv2")]},
+                                     "vc": SecretValue("sv1", "f.toml", "vcenters[0]", "password"), "cfg": {"h": [SecretValue("sv2", "f.toml", "snmp_profiles[0]", "community")]},
                                      "hid": hidden})
     output = stream.getvalue()
     assert not any(s in output for s in ("hunter2", "pw9", "sv1", "sv2", "sv3", "sv4"))

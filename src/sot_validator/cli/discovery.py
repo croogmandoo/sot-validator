@@ -16,6 +16,7 @@ from sot_validator.cli._common import (
     _parse_int_list,
     _write_validation_results_file,
 )
+from sot_validator.cli._config import DEFAULT_DISCOVER_MAX_CONCURRENCY, resolve_policy_value
 from sot_validator.discovery import (
     DEFAULT_GATEWAY_OCTETS,
     DEFAULT_TCP_PORTS,
@@ -286,7 +287,12 @@ def cmd_discover(args: argparse.Namespace) -> int:
         cidr=args.cidr,
         gateway_octets=gw_octets,
         tcp_ports=tcp_ports,
-        max_concurrency=args.max_concurrency,
+        max_concurrency=resolve_policy_value(
+            args,
+            "max_concurrency",
+            "max_concurrent_probes_per_site",
+            DEFAULT_DISCOVER_MAX_CONCURRENCY,
+        ),
         ping_timeout_sec=args.ping_timeout,
         tcp_timeout_sec=args.tcp_timeout,
         max_active_subnets=args.max_active_subnets,
@@ -565,8 +571,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     discover_parser.add_argument(
         "--max-concurrency",
         type=int,
-        default=128,
-        help="Maximum concurrent async network probes (default: 128).",
+        default=None,
+        help=(
+            "Maximum concurrent async network probes "
+            "(default: 128, or [policy] max_concurrent_probes_per_site from --config)."
+        ),
     )
     discover_parser.add_argument(
         "--max-active-subnets",
