@@ -10,6 +10,7 @@ from pathlib import Path
 import sqlite3
 import pytest
 
+from sot_validator.enrichment import OuiRegistry, load_oui_directory
 from sot_validator.extraction import SqlExportSoTClient
 from sot_validator.models import (
     ArpEntry,
@@ -23,6 +24,7 @@ from sot_validator.models import (
 )
 from sot_validator.reconciliation import (
     DISCREPANCY_CSV_COLUMNS,
+    DISCREPANCY_OUI_CSV_COLUMNS,
     ONBOARDING_CSV_COLUMNS,
     DiscrepancyRecord,
     DiscrepancyType,
@@ -50,6 +52,7 @@ FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "sot_samples"
 SQL_SEED_PATH = FIXTURES_DIR / "sql" / "sot_schema_and_seed.sql"
 VCENTER_FIXTURE_PATH = FIXTURES_DIR / "vcenter" / "vcenter_inventory.json"
 SNMP_FIXTURE_PATH = FIXTURES_DIR / "snmp" / "extreme_and_apc_walks.json"
+OUI_DIR = Path(__file__).resolve().parent / "fixtures" / "oui"
 FIXED_TIME = datetime(2026, 11, 11, 12, 0, 0, tzinfo=timezone.utc)
 
 
@@ -712,3 +715,254 @@ def test_onboarding_sql_escapes_single_quotes_and_supports_fixture_transport() -
     )
     sql_text = manual_report.generate_onboarding_sql()
     assert "'o''reilly-vm.site042.example.internal'" in sql_text
+
+
+# --- Opt-in OUI annotation and randomised-MAC exclusion ----------------------
+
+# (ip, mac, expected vendor, expected class, excluded with --exclude-randomized-macs)
+OUI_ARP_CASES = [
+    ("10.42.10.70", "02:11:22:33:44:55", None, "locally_administered", True),
+    ("10.42.10.71", "06:aa:bb:cc:dd:ee", None, "locally_administered", True),
+    ("10.42.10.72", "da:a1:19:00:00:01", None, "locally_administered", True),
+    ("10.42.10.73", "aa:9c:6c:00:00:01", "Ubiquiti UniFi", "locally_administered", False),
+    ("10.42.10.74", "00:50:56:9a:42:74", "VMware, Inc.", "universal", False),
+    ("10.42.10.75", "70:b3:d5:1f:ff:ff", "Block Holder, Medium Ltd", "universal", False),
+    ("10.42.10.76", "70:b3:d5:12:3a:bc", "Tiny Block, Small Co", "universal", False),
+    ("10.42.10.77", "44:61:32:00:00:01", "Ecobee", "universal", False),
+]
+RANDOM_VM_MAC = "0e:00:00:00:00:90"
+RANDOM_DEVICE_MAC = "0a:00:00:00:00:15"
+MISMATCH_LA_MAC = "02:00:00:99:99:99"
+
+
+def _oui_reconcile(**reconciler_kwargs):
+    arp = [
+        {"ip": ip, "arp_mac": mac, "arp_source_device_id": "dev-042-sw01"}
+        for ip, mac, _, _, _ in OUI_ARP_CASES
+    ]
+    # Tracked UPS IP with a drifted locally-administered MAC -> ATTRIBUTE_MISMATCH.
+    arp.append(
+        {"ip": "10.42.30.10", "arp_mac": MISMATCH_LA_MAC, "arp_source_device_id": "dev-042-sw01"}
+    )
+    vms = [
+        HypervisorVmRecord(
+            vcenter_instance="vcenter-prod-02",
+            vm_moref="vm-20490",
+            vm_name="rnd-vm.site042",
+            guest_hostname="rnd-vm.site042.example.internal",
+            bios_uuid="421a0042-0077-4000-8000-0050569a4277",
+            power_state=VmPowerState.POWERED_ON,
+            guest_os_family="linux",
+            ip_addresses=["10.42.10.90"],
+            mac_addresses=[RANDOM_VM_MAC],
+            site_id="site-042",
+        )
+    ]
+    snmp = [
+        {
+            "ip_address": "10.42.1.15",
+            "sys_name": "rogue-sw.site042.example.internal",
+            "mac_address": RANDOM_DEVICE_MAC,
+            "snmp_reachable": True,
+        }
+    ]
+    return InventoryReconciler(**reconciler_kwargs).reconcile(
+        _build_base_site(),
+        vms=vms,
+        arp_entries=arp,
+        snmp_targets=snmp,
+        icmp_responses={"10.42.1.88": IcmpProbeResponse(reachable=True, latency_ms=1.0)},
+        generated_at=FIXED_TIME,
+    )
+
+
+def _all_outputs(report: ReconciliationReport) -> tuple[str, str, str, str]:
+    return (
+        report.to_json(),
+        report.to_csv(),
+        report.generate_onboarding_csv(),
+        report.generate_onboarding_sql(),
+    )
+
+
+def test_oui_options_off_output_is_byte_identical() -> None:
+    default = _oui_reconcile()
+    explicit = _oui_reconcile(oui_registry=None, exclude_randomized_macs=False)
+    assert _all_outputs(default) == _all_outputs(explicit)
+
+    data = json.loads(default.to_json())
+    assert list(data) == [
+        "generated_at",
+        "total_discrepancies",
+        "summary_by_type",
+        "summary_by_site",
+        "discrepancies",
+    ]
+    for item in data["discrepancies"]:
+        assert tuple(item) == DISCREPANCY_CSV_COLUMNS
+    header = default.to_csv().splitlines()[0]
+    assert tuple(header.split(",")) == DISCREPANCY_CSV_COLUMNS
+    assert len(DISCREPANCY_CSV_COLUMNS) == 11
+    # Randomised MACs are counted when exclusion is off.
+    assert default.total_discrepancies == 14
+    assert default.excluded_discrepancies is None
+
+
+def test_oui_annotation_resolves_vendor_and_class() -> None:
+    report = _oui_reconcile(oui_registry=load_oui_directory(OUI_DIR))
+    data = json.loads(report.to_json())
+    assert list(data)[-1] == "discrepancies"
+    by_ip = {d["observed_ip"]: d for d in data["discrepancies"]}
+    for ip, mac, vendor, mac_class, _ in OUI_ARP_CASES:
+        item = by_ip[ip]
+        assert item["observed_mac"] == mac
+        assert (item["observed_mac_vendor"], item["observed_mac_class"]) == (vendor, mac_class)
+    # ICMP-only discrepancy has no MAC -> null annotations, keys still present.
+    assert by_ip["10.42.1.88"]["observed_mac"] is None
+    assert by_ip["10.42.1.88"]["observed_mac_vendor"] is None
+    assert by_ip["10.42.1.88"]["observed_mac_class"] is None
+    for item in data["discrepancies"]:
+        assert tuple(item) == DISCREPANCY_OUI_CSV_COLUMNS
+        assert tuple(item)[:11] == DISCREPANCY_CSV_COLUMNS
+
+    rows = list(csv.DictReader(io.StringIO(report.to_csv())))
+    assert tuple(rows[0]) == DISCREPANCY_OUI_CSV_COLUMNS
+    assert DISCREPANCY_OUI_CSV_COLUMNS == DISCREPANCY_CSV_COLUMNS + (
+        "observed_mac_vendor",
+        "observed_mac_class",
+    )
+    csv_by_ip = {row["observed_ip"]: row for row in rows}
+    assert csv_by_ip["10.42.10.74"]["observed_mac_vendor"] == "VMware, Inc."
+    assert csv_by_ip["10.42.10.70"]["observed_mac_vendor"] == ""
+    assert csv_by_ip["10.42.10.70"]["observed_mac_class"] == "locally_administered"
+    assert csv_by_ip["10.42.1.88"]["observed_mac_vendor"] == ""
+    assert csv_by_ip["10.42.1.88"]["observed_mac_class"] == ""
+
+    # The 11 existing keys, columns and onboarding outputs are unchanged by annotation.
+    plain = _oui_reconcile()
+    plain_data = json.loads(plain.to_json())
+    assert [
+        {key: d[key] for key in DISCREPANCY_CSV_COLUMNS} for d in data["discrepancies"]
+    ] == plain_data["discrepancies"]
+    plain_rows = list(csv.DictReader(io.StringIO(plain.to_csv())))
+    assert [{k: r[k] for k in DISCREPANCY_CSV_COLUMNS} for r in rows] == plain_rows
+    assert report.generate_onboarding_csv() == plain.generate_onboarding_csv()
+    assert report.generate_onboarding_sql() == plain.generate_onboarding_sql()
+
+
+def test_oui_annotation_with_builtin_registry_only() -> None:
+    report = _oui_reconcile(oui_registry=OuiRegistry())
+    by_ip = {d["observed_ip"]: d for d in report.to_dict()["discrepancies"]}
+    assert by_ip["10.42.10.73"]["observed_mac_vendor"] == "Ubiquiti UniFi"
+    assert by_ip["10.42.10.77"]["observed_mac_vendor"] == "Ecobee"
+    # VMware is not in the builtin table.
+    assert by_ip["10.42.10.74"]["observed_mac_vendor"] is None
+    assert by_ip["10.42.10.74"]["observed_mac_class"] == "universal"
+
+
+@pytest.mark.parametrize(
+    ("mac", "expected"),
+    [
+        ("00:50:56:9a:42:74", ("VMware, Inc.", "universal")),
+        ("02:11:22:33:44:55", (None, "locally_administered")),
+        ("01:00:5e:00:00:01", (None, "multicast")),
+        ("not-a-mac", (None, "invalid")),
+        ("10.42.10.1", (None, "invalid")),
+        (None, (None, None)),
+    ],
+)
+def test_discrepancy_annotation_helper_classes(mac, expected) -> None:
+    from sot_validator.reconciliation.oui_annotation import discrepancy_annotation
+
+    annotation = discrepancy_annotation(load_oui_directory(OUI_DIR), mac)
+    assert (annotation["observed_mac_vendor"], annotation["observed_mac_class"]) == expected
+
+
+@pytest.mark.parametrize("with_registry", [False, True])
+def test_exclude_randomized_macs(with_registry: bool) -> None:
+    registry = load_oui_directory(OUI_DIR) if with_registry else None
+    off = _oui_reconcile(oui_registry=registry)
+    on = _oui_reconcile(oui_registry=registry, exclude_randomized_macs=True)
+
+    excluded_macs = {mac for _, mac, _, _, excluded in OUI_ARP_CASES if excluded}
+    excluded_macs |= {RANDOM_VM_MAC, RANDOM_DEVICE_MAC}
+    excluded = on.excluded_discrepancies
+    assert {d.observed_mac for d in excluded} == excluded_macs
+    assert all(d.discrepancy_type is not DiscrepancyType.ATTRIBUTE_MISMATCH for d in excluded)
+    assert {d.discrepancy_type for d in excluded} == {
+        DiscrepancyType.UNTRACKED_VM,
+        DiscrepancyType.UNTRACKED_IP,
+        DiscrepancyType.UNTRACKED_DEVICE,
+    }
+    # Every counted record keeps the ID it had without exclusion.
+    off_ids = {d.discrepancy_id for d in off.discrepancies}
+    assert {d.discrepancy_id for d in on.discrepancies} | {d.discrepancy_id for d in excluded} == off_ids
+    assert [d for d in off.discrepancies if d not in excluded] == on.discrepancies
+
+    counted_macs = {d.observed_mac for d in on.discrepancies}
+    assert "aa:9c:6c:00:00:01" in counted_macs
+    assert "00:50:56:9a:42:74" in counted_macs
+    mismatch = [d for d in on.discrepancies if d.discrepancy_type is DiscrepancyType.ATTRIBUTE_MISMATCH]
+    assert [d.observed_mac for d in mismatch] == [MISMATCH_LA_MAC]
+
+    data = json.loads(on.to_json())
+    assert list(data)[-3:] == [
+        "discrepancies",
+        "excluded_randomized_mac_count",
+        "excluded_randomized_mac_discrepancies",
+    ]
+    # 3 ARP IPs, plus the VM and the SNMP device, each also seen as an UNTRACKED_IP.
+    assert data["excluded_randomized_mac_count"] == 7
+    assert data["total_discrepancies"] == off.total_discrepancies - 7 == 7
+    assert data["summary_by_type"] == {
+        "UNTRACKED_VM": 0,
+        "UNTRACKED_IP": 6,
+        "UNTRACKED_DEVICE": 0,
+        "ATTRIBUTE_MISMATCH": 1,
+    }
+    assert (off.summary_by_type["UNTRACKED_IP"], off.summary_by_type["UNTRACKED_VM"]) == (11, 1)
+    assert off.summary_by_type["UNTRACKED_DEVICE"] == 1
+    assert data["summary_by_site"]["site-042"]["total"] == 7
+    assert data["summary_by_site"]["site-042"]["UNTRACKED_IP"] == 6
+    assert data["summary_by_site"]["site-042"]["UNTRACKED_VM"] == 0
+    excluded_items = data["excluded_randomized_mac_discrepancies"]
+    assert {item["observed_mac"] for item in excluded_items} == excluded_macs
+    if with_registry:
+        assert all(tuple(item) == DISCREPANCY_OUI_CSV_COLUMNS for item in excluded_items)
+        assert all(item["observed_mac_class"] == "locally_administered" for item in excluded_items)
+    else:
+        # Exclusion alone adds no annotation keys or columns.
+        assert all(tuple(item) == DISCREPANCY_CSV_COLUMNS for item in excluded_items)
+        assert all(tuple(item) == DISCREPANCY_CSV_COLUMNS for item in data["discrepancies"])
+        assert on.to_csv().splitlines()[0] == ",".join(DISCREPANCY_CSV_COLUMNS)
+
+    csv_text = on.to_csv()
+    onboarding_csv = on.generate_onboarding_csv()
+    onboarding_sql = on.generate_onboarding_sql()
+    assert len(list(csv.DictReader(io.StringIO(csv_text)))) == 7
+    for mac in excluded_macs:
+        assert mac not in csv_text
+        assert mac not in onboarding_csv
+        assert mac not in onboarding_sql
+        assert mac in off.to_csv()
+        assert mac in off.generate_onboarding_csv()
+    assert "aa:9c:6c:00:00:01" in onboarding_csv and "aa:9c:6c:00:00:01" in onboarding_sql
+
+    # migrate-export reads discrepancies only: the loaded report has just the counted records.
+    restored = ReconciliationReport.from_json(on.to_json())
+    assert restored.discrepancies == on.discrepancies
+    assert restored.total_discrepancies == 7
+
+
+def test_exclude_randomized_macs_with_nothing_to_exclude() -> None:
+    off = _oui_reconcile(oui_registry=None)
+    report = InventoryReconciler(exclude_randomized_macs=True).reconcile(
+        _build_base_site(),
+        arp_entries=[ArpEntry(ip="10.42.10.75", arp_mac="00:50:56:9a:42:75")],
+        generated_at=FIXED_TIME,
+    )
+    data = report.to_dict()
+    assert data["excluded_randomized_mac_count"] == 0
+    assert data["excluded_randomized_mac_discrepancies"] == []
+    assert data["total_discrepancies"] == 1
+    assert off.excluded_discrepancies is None

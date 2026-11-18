@@ -14,6 +14,7 @@ from pathlib import Path
 import re
 from typing import Any, Optional
 
+from sot_validator.enrichment import OuiRegistry
 from sot_validator.models import (
     ArpEntry,
     Equipment,
@@ -28,6 +29,12 @@ from sot_validator.models import (
     _format_optional_datetime,
     _parse_optional_datetime,
     _require_non_empty_str,
+)
+from sot_validator.reconciliation.oui_annotation import (
+    OUI_ANNOTATION_KEYS,
+    discrepancy_csv_cells,
+    discrepancy_dict,
+    partition_randomized,
 )
 from sot_validator.signals.hypervisor import (
     HypervisorInventoryProvider,
@@ -69,6 +76,8 @@ DISCREPANCY_CSV_COLUMNS: tuple[str, ...] = (
     "details",
     "recommended_onboarding_action",
 )
+
+DISCREPANCY_OUI_CSV_COLUMNS: tuple[str, ...] = DISCREPANCY_CSV_COLUMNS + OUI_ANNOTATION_KEYS
 
 ONBOARDING_CSV_COLUMNS: tuple[str, ...] = (
     "record_type",
@@ -289,6 +298,9 @@ class ReconciliationReport:
     generated_at: datetime = field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+    # None when exclusion was off; set (possibly empty) when --exclude-randomized-macs ran.
+    excluded_discrepancies: Optional[list[DiscrepancyRecord]] = None
+    oui_registry: Optional[OuiRegistry] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         self.generated_at = _resolve_timestamp(self.generated_at)
@@ -332,13 +344,21 @@ class ReconciliationReport:
         return summary
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data = {
             "generated_at": _format_optional_datetime(self.generated_at),
             "total_discrepancies": self.total_discrepancies,
             "summary_by_type": self.summary_by_type,
             "summary_by_site": self.summary_by_site,
-            "discrepancies": [d.to_dict() for d in self.discrepancies],
+            "discrepancies": [
+                discrepancy_dict(d, self.oui_registry) for d in self.discrepancies
+            ],
         }
+        if self.excluded_discrepancies is not None:
+            data["excluded_randomized_mac_count"] = len(self.excluded_discrepancies)
+            data["excluded_randomized_mac_discrepancies"] = [
+                discrepancy_dict(d, self.oui_registry) for d in self.excluded_discrepancies
+            ]
+        return data
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> ReconciliationReport:
@@ -375,7 +395,9 @@ class ReconciliationReport:
     def to_csv(self, *, output_path: Optional[Path | str] = None) -> str:
         buf = io.StringIO()
         writer = csv.writer(buf, lineterminator="\n")
-        writer.writerow(DISCREPANCY_CSV_COLUMNS)
+        writer.writerow(
+            DISCREPANCY_OUI_CSV_COLUMNS if self.oui_registry is not None else DISCREPANCY_CSV_COLUMNS
+        )
         for disc in self.discrepancies:
             writer.writerow(
                 [
@@ -390,6 +412,7 @@ class ReconciliationReport:
                     disc.sot_item_id or "",
                     disc.details or "",
                     disc.recommended_onboarding_action or "",
+                    *discrepancy_csv_cells(disc, self.oui_registry),
                 ]
             )
         content = buf.getvalue()
@@ -710,12 +733,16 @@ class InventoryReconciler:
         icmp_responses: Optional[
             Mapping[str, Any] | Sequence[Any]
         ] = None,
+        oui_registry: Optional[OuiRegistry] = None,
+        exclude_randomized_macs: bool = False,
     ) -> None:
         self.vcenter_provider = vcenter_provider
         self.vms = vms
         self.arp_entries = arp_entries
         self.snmp_targets = snmp_targets
         self.icmp_responses = icmp_responses
+        self.oui_registry = oui_registry
+        self.exclude_randomized_macs = exclude_randomized_macs
 
     @staticmethod
     def _normalize_sites(
@@ -1904,15 +1931,21 @@ class InventoryReconciler:
                 )
             )
 
+        excluded: Optional[list[DiscrepancyRecord]] = None
+        if self.exclude_randomized_macs:
+            discrepancies, excluded = partition_randomized(discrepancies, self.oui_registry)
         return ReconciliationReport(
             discrepancies=discrepancies,
             generated_at=report_dt,
+            excluded_discrepancies=excluded,
+            oui_registry=self.oui_registry,
         )
 
 
 __all__ = [
     "ALL_DISCREPANCY_TYPES",
     "DISCREPANCY_CSV_COLUMNS",
+    "DISCREPANCY_OUI_CSV_COLUMNS",
     "DiscrepancyRecord",
     "DiscrepancyType",
     "InventoryReconciler",
