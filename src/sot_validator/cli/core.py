@@ -310,6 +310,7 @@ def _run_body(
         results, output_dir, generated_at=eval_time
     )
     progress.output_files.append(str(results_path))
+    progress.results.extend(results)
     plan = DryRunActionPlanGenerator(generated_at=eval_time).generate_plan(
         results, generated_at=eval_time
     )
