@@ -24,6 +24,7 @@ from sot_validator.cli import (
     power,
     quality,
     remediation,
+    synth,
     topology,
     ups,
     workbench,
@@ -52,6 +53,7 @@ COMMAND_MODULES = (
     oui,
     audit,
     power,
+    synth,
 )
 
 
