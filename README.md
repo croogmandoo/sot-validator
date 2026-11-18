@@ -247,6 +247,19 @@ PYTHONPATH=src python3 -c "from sot_validator.config import load_config; print(l
 PYTHONPATH=src python3 -m sot_validator --config examples/sot-validator.example.toml validate --fixtures --output-dir output
 ```
 
+## Logging and Metrics
+
+Three root flags, given before the subcommand like `--config`, work with every command:
+
+```bash
+PYTHONPATH=src python3 -m sot_validator --log-format json --log-level INFO \
+  --metrics-file /var/lib/node_exporter/textfile/sot_validator.prom run --fixtures
+```
+
+- `--log-format {text,json}` and `--log-level` (case-insensitive, `DEBUG` to `CRITICAL`) configure the `sot_validator` logger, with secret redaction, writing to stderr. The defaults are `text` and `WARNING`. Without either flag, logging is not configured and output is unchanged.
+- `--metrics-file PATH` writes the Prometheus starter metrics once when the command exits, atomically (temp file plus rename) for node_exporter's textfile collector. Every command sets `sot_run_duration_seconds`, and `sot_run_last_success_timestamp_seconds` when it exits 0 or 1. `run` and `campaign` also set `sot_site_status{site,status}` and `sot_records_total{site,classification}` (for `campaign`, the committed validation results). `sot_collector_errors_total` and `sot_probe_duration_seconds` are listed but not populated yet.
+- If the file cannot be written, the command prints one `error: cannot write metrics file <path>: <reason>` line, leaves any existing file unchanged, and exits 3 instead of 0 (other exit codes are kept). A config or argument error writes no metrics file.
+
 ## Development & Checks
 
 Run the repository verification gate:

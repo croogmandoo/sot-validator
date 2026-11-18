@@ -110,6 +110,7 @@ def _campaign_body(
     summary_path = output_dir / "campaign_summary.json"
     summary_path.write_text(summary.to_json(indent=2), encoding="utf-8")
     progress.output_files.append(str(summary_path))
+    progress.results.extend(summary.committed_validation_results)
     if not alerts_file.exists():
         alerts_file.parent.mkdir(parents=True, exist_ok=True)
         alerts_file.write_text(
