@@ -64,3 +64,34 @@ port = 8006
 token_id = "sot-validator@pve!readonly"
 token_secret = "${env:SOT_PROXMOX_TOKEN_SECRET}"
 verify_tls = true
+
+# Weekly change digest delivery, read only by `sot-validator --config <file>
+# digest ... --send`. The whole section is optional; without --send the digest
+# command only renders and never reads it. policy is "on_change" (default:
+# send only when a category has new items) or "always".
+[digest]
+policy = "on_change"
+
+# At most one SMTP target. STARTTLS is required unless host is localhost or a
+# loopback IP and allow_insecure_localhost = true. username / password are
+# optional ${env:NAME} secrets (set both or neither); the sink reads them only
+# when it sends.
+[digest.smtp]
+host = "smtp.example.invalid"
+port = 587
+sender = "sot-validator@example.invalid"
+recipients = ["network-ops@example.invalid"]
+starttls = true
+allow_insecure_localhost = false
+timeout_seconds = 10
+subject = "SoT weekly change digest"
+username = "${env:SOT_DIGEST_SMTP_USER}"
+password = "${env:SOT_DIGEST_SMTP_PASSWORD}"
+
+# Any number of webhooks, each POSTed {source, event_type, text} JSON. The URL
+# is a secret: it must be a ${env:NAME} reference, and `digest --send` reveals
+# and checks it (http/https with a host, no whitespace) before sending.
+[[digest.webhooks]]
+name = "ops-chat"
+url = "${env:SOT_DIGEST_WEBHOOK_URL}"
+timeout_seconds = 10

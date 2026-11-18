@@ -1,11 +1,11 @@
 usage: sot-validator [-h] [--config PATH] [--log-format {text,json}]
                      [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--metrics-file PATH]
-                     {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power,synth-fleet} ...
+                     {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,digest,oui,audit,power,synth-fleet} ...
 
 Read-only batch inventory validation system for legacy Network Source of Truth.
 
 positional arguments:
-  {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,oui,audit,power,synth-fleet}
+  {extract,validate,report,run,history,history-prune,history-migrate,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,curate-import,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check,fleet-summary,digest,oui,audit,power,synth-fleet}
     extract             Extract read-only site inventory batches into local snapshots.
     validate            Evaluate passive, hypervisor, directory/DNS, and scoped active signals
                         against site snapshots.
@@ -63,6 +63,8 @@ positional arguments:
                         catalog (no network I/O).
     fleet-summary       Build the fleet site health scorecard from quality / cert-report /
                         firmware-check JSON (no network I/O).
+    digest              Render the weekly change digest between a previous and a current run;
+                        deliver it over SMTP / webhook only with --send.
     oui                 Offline IEEE OUI vendor lookup and MAC address classification (no network
                         I/O).
     audit               Verify the curation audit-log hash chain read-only (never migrates or
