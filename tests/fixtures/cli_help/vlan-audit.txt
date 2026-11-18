@@ -1,0 +1,26 @@
+usage: sot-validator vlan-audit [-h] --snapshot SNAPSHOT [--site-id SITE_ID] [--fdb FDB]
+                                [--router-arp ROUTER_ARP] [--dhcp-scopes DHCP_SCOPES]
+                                [--dhcp-expected DHCP_EXPECTED] [--output-json OUTPUT_JSON]
+                                [--output-md OUTPUT_MD]
+
+options:
+  -h, --help            show this help message and exit
+  --snapshot SNAPSHOT   Site JSON snapshot file or SnapshotStore directory.
+  --site-id SITE_ID     Site ID to select from --snapshot; an ID not in the snapshot is an error
+                        (default: the first site).
+  --fdb FDB             FDB observations JSON: a list or {"observations": [...]} of objects with
+                        device_id, observed_at, source, entries and port_classifications, or a
+                        `map-ports` report ({"ports": [...]}) unchanged (repeatable).
+  --router-arp ROUTER_ARP
+                        Router ARP records JSON: a list or {"arp": [...]}, {"records": [...]} or
+                        {"arp_records": [...]} (repeatable).
+  --dhcp-scopes DHCP_SCOPES
+                        DHCP scopes JSON: a list or {"scopes": [...]} of objects with cidr, source
+                        and observed_at.
+  --dhcp-expected DHCP_EXPECTED
+                        Subnets expected to have DHCP: a .json list of subnet IDs/CIDRs, or a text
+                        file with one per line (# comments).
+  --output-json OUTPUT_JSON
+                        Output path for the VLAN audit report JSON.
+  --output-md OUTPUT_MD
+                        Output path for the VLAN audit report Markdown.
