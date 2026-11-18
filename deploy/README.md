@@ -7,7 +7,7 @@
 
 Every path and the `ExecStart=` command line are placeholders, marked with comments in the units. Adjust them for your host before installing.
 
-> **Not yet wired in.** The `sot_validator.ops` run lock (`RunLock`), run manifest (`RunManifest`, `run_manifest.json`) and exit-code contract (`ExitCode`, `select_exit_code`) are not used by the CLI yet. Until a later integration change wires them into `run` and `campaign`, the service exit status is whatever the CLI returns today, and no lock or manifest is written.
+> **Run lock and manifest.** `run` and `campaign` take the `sot_validator.ops` run lock (`--lock-file`, default `<output-dir>/.sot-validator.lock`) and write `run_manifest.json` in the output directory.
 >
 > **POSIX-only.** `sot_validator.ops` uses `fcntl.flock`, so it works on Linux and other POSIX systems only.
 
@@ -76,7 +76,7 @@ To run once immediately: `sudo systemctl start sot-validator.service`.
 
 ## Exit codes
 
-`sot_validator.ops.ExitCode` defines this contract (not yet returned by the CLI):
+`sot_validator.ops.ExitCode` defines this contract, which `run` and `campaign` return:
 
 | Code | Name | Meaning |
 |------|------|---------|
@@ -86,4 +86,4 @@ To run once immediately: `sudo systemctl start sot-validator.service`.
 | `3` | `FAILED` | The run failed as a whole, or every site failed. |
 | `4` | `LOCK_HELD` | Another run held the lock, so this run did nothing. |
 
-Skipped sites never count as failures.
+Skipped sites never count as failures. `1` (actionable findings) is a non-zero exit, so systemd records such a run as failed.

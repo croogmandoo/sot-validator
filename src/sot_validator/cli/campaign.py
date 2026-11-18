@@ -11,7 +11,9 @@ from typing import Optional
 from sot_validator.campaign import (
     CampaignConfig,
     CampaignOrchestrator,
+    CampaignRunSummary,
     JsonFileAlertSink,
+    SiteWaveStatus,
     WebhookPayloadFormatter,
 )
 from sot_validator.cli._common import (
@@ -22,18 +24,53 @@ from sot_validator.cli._common import (
     _parse_str_list,
     _resolve_sites_for_command,
 )
+from sot_validator.cli._ops_run import (
+    EXIT_CODE_EPILOG,
+    OpsRunProgress,
+    add_lock_file_argument,
+    has_actionable_findings,
+    run_with_ops_contract,
+)
 from sot_validator.connectors import (
     PilotCutoverValidator,
     SnmpWalkConnector,
     VSphereRestConnector,
 )
 from sot_validator.history import HistoryStore
+from sot_validator.ops import SiteStatus
 from sot_validator.reporting import DEFAULT_DASHBOARD_FILENAME, generate_html_dashboard
 
 
 def cmd_campaign(args: argparse.Namespace) -> int:
     output_dir = Path(args.output_dir or "./output")
     output_dir.mkdir(parents=True, exist_ok=True)
+    return run_with_ops_contract(
+        "campaign",
+        args,
+        output_dir,
+        lambda progress: _campaign_body(args, output_dir, progress),
+    )
+
+
+def _campaign_site_statuses(summary: CampaignRunSummary) -> list[SiteStatus]:
+    statuses: list[SiteStatus] = []
+    for site_result in summary.site_results:
+        if site_result.status == SiteWaveStatus.COMMITTED:
+            statuses.append(SiteStatus(site_result.site_id, "ok"))
+        elif site_result.status == SiteWaveStatus.QUARANTINED_OUTAGE_SUSPECTED:
+            statuses.append(
+                SiteStatus(site_result.site_id, "failed", "outage suspected")
+            )
+    statuses.extend(
+        SiteStatus(site_id, "skipped", "circuit breaker")
+        for site_id in summary.skipped_site_ids
+    )
+    return statuses
+
+
+def _campaign_body(
+    args: argparse.Namespace, output_dir: Path, progress: OpsRunProgress
+) -> tuple[list[SiteStatus], list[str], bool]:
     sites = _resolve_sites_for_command(
         args, output_dir, default_to_fixtures=True
     )
@@ -68,16 +105,18 @@ def cmd_campaign(args: argparse.Namespace) -> int:
         campaign_id=args.campaign_id,
         evaluation_time=eval_time,
     )
+    progress.sites.extend(_campaign_site_statuses(summary))
 
-    (output_dir / "campaign_summary.json").write_text(
-        summary.to_json(indent=2), encoding="utf-8"
-    )
+    summary_path = output_dir / "campaign_summary.json"
+    summary_path.write_text(summary.to_json(indent=2), encoding="utf-8")
+    progress.output_files.append(str(summary_path))
     if not alerts_file.exists():
         alerts_file.parent.mkdir(parents=True, exist_ok=True)
         alerts_file.write_text(
             json.dumps([a.to_dict() for a in summary.alerts], indent=2),
             encoding="utf-8",
         )
+    progress.output_files.append(str(alerts_file))
 
     if args.webhook_format is not None:
         if summary.alerts:
@@ -90,10 +129,12 @@ def cmd_campaign(args: argparse.Namespace) -> int:
                 "alert_count": 0,
                 "alerts": [],
             }
-        (output_dir / "campaign_webhook_payload.json").write_text(
+        webhook_path = output_dir / "campaign_webhook_payload.json"
+        webhook_path.write_text(
             json.dumps(webhook_payload, indent=2),
             encoding="utf-8",
         )
+        progress.output_files.append(str(webhook_path))
 
     if args.history_db is not None and summary.committed_validation_results:
         with HistoryStore(Path(args.history_db)) as hstore:
@@ -109,14 +150,20 @@ def cmd_campaign(args: argparse.Namespace) -> int:
             if summary.committed_validation_results
             else [r for sr in summary.site_results for r in sr.results]
         )
+        dashboard_path = output_dir / DEFAULT_DASHBOARD_FILENAME
         generate_html_dashboard(
             dashboard_results,
             sites=sites,
-            output_path=output_dir / DEFAULT_DASHBOARD_FILENAME,
+            output_path=dashboard_path,
             generated_at=eval_time,
         )
+        progress.output_files.append(str(dashboard_path))
 
-    return 0
+    return (
+        progress.sites,
+        progress.output_files,
+        has_actionable_findings(summary.committed_validation_results),
+    )
 
 
 def cmd_preflight(args: argparse.Namespace) -> int:
@@ -190,6 +237,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     campaign_parser = subparsers.add_parser(
         "campaign",
         help="Execute rolling multi-site validation waves with outage circuit breakers and alert sinks.",
+        epilog=EXIT_CODE_EPILOG,
     )
     campaign_parser.add_argument(
         "--snapshot-dir",
@@ -257,6 +305,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Generate validation_dashboard.html in --output-dir.",
     )
+    add_lock_file_argument(campaign_parser)
     _add_source_arguments(campaign_parser)
     _add_validation_arguments(campaign_parser)
     campaign_parser.set_defaults(func=cmd_campaign)

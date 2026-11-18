@@ -1,4 +1,7 @@
-"""Unattended run lock, run manifest and exit-code contract (POSIX-only, not yet wired into the CLI)."""
+"""Unattended run lock, run manifest and exit-code contract (POSIX-only).
+
+Used by the ``run`` and ``campaign`` commands through ``sot_validator.cli._ops_run``.
+"""
 
 from __future__ import annotations
 

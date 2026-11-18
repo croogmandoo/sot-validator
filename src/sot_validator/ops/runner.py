@@ -3,15 +3,17 @@
 ``RunLock`` is a non-blocking ``fcntl.flock`` lock on a file that holds a JSON
 holder record (``pid``, ``started_at``). The flock is the source of truth; the
 record only names the holder for ``RunLockHeld`` messages and lets a new holder
-log when it reclaims a lock left by a dead process. The lock file is truncated,
-never deleted, on release.
+log when it reclaims a lock left by a dead process. The lock file is opened with
+``O_NOFOLLOW`` and a ``started_at`` that is not ISO-8601 is dropped. The lock
+file is truncated, never deleted, on release.
 
 ``RunManifest`` records one run (ids, times, tool version, config hash, per-site
-status and output files) and writes it atomically to ``run_manifest.json`` with
+status, output files and any whole-run failure reason) and writes it atomically to ``run_manifest.json`` with
 every value passed through ``observability.redact``.
 
 ``ExitCode`` and ``select_exit_code`` define the process exit-code contract.
-None of this is wired into the CLI yet.
+The ``run`` and ``campaign`` commands use this contract through
+``sot_validator.cli._ops_run``.
 """
 
 from __future__ import annotations
@@ -77,7 +79,12 @@ def _read_holder(fd: int) -> tuple[Optional[int], Optional[str]]:
     if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
         return None, None
     started_at = record.get("started_at")
-    return pid, started_at if isinstance(started_at, str) else None
+    if not isinstance(started_at, str):
+        return pid, None
+    try:
+        return pid, datetime.fromisoformat(started_at).isoformat()
+    except ValueError:
+        return pid, None
 
 
 def _pid_alive(pid: int) -> bool:
@@ -105,7 +112,7 @@ class RunLock:
         """Take the lock or raise ``RunLockHeld``; never blocks."""
         if self._fd is not None:
             return self
-        fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o644)
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o644)
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as exc:
@@ -208,6 +215,7 @@ class RunManifest:
     config_sha256: Optional[str]
     sites: list[SiteStatus]
     output_files: list[str]
+    failure_reason: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return a redacted, JSON-safe dict of the manifest."""
@@ -224,6 +232,7 @@ class RunManifest:
                 for site in self.sites
             ],
             "output_files": [str(item) for item in self.output_files],
+            "failure_reason": self.failure_reason,
         }
         return _json_safe(redact(data))
 

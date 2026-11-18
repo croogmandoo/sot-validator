@@ -286,7 +286,7 @@ def test_cli_run_and_report_with_html_dashboard(tmp_path: Path) -> None:
             str(run_dir),
         ]
     )
-    assert rc == 0
+    assert rc == 1
     dashboard_file = run_dir / "validation_dashboard.html"
     assert dashboard_file.exists()
     assert "<!DOCTYPE html>" in dashboard_file.read_text(encoding="utf-8")
@@ -605,7 +605,7 @@ def test_cli_reconcile_and_campaign_end_to_end_workflow(tmp_path: Path) -> None:
                 str(camp_out),
             ]
         )
-        == 0
+        == 1
     )
 
     assert (camp_out / "campaign_summary.json").exists()
