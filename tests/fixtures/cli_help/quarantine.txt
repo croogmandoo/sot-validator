@@ -30,7 +30,7 @@ options:
   --csv-out CSV_OUT     Optional path to also export the manifest as CSV.
   --min-consecutive-stale-runs MIN_CONSECUTIVE_STALE_RUNS
                         Minimum consecutive stale runs required for quarantine graduation
-                        (default: 3).
+                        (default: 3, or [policy] quarantine_min_stale_runs from --config).
   --min-stale-days MIN_STALE_DAYS
                         Minimum stale duration in days required for quarantine graduation
                         (default: 30.0).

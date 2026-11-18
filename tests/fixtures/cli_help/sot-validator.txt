@@ -1,4 +1,4 @@
-usage: sot-validator [-h]
+usage: sot-validator [-h] [--config PATH]
                      {extract,validate,report,run,history,history-prune,quarantine,remediate,reconcile,campaign,preflight,reclaim-ports,export-modern-sot,migrate-export,parity-check,migration-parity,ups-health,itsm,itsm-sync,discover,serve,curate,topology,fingerprint,map-ports,diff-scans,quality,cert-report,firmware-check} ...
 
 Read-only batch inventory validation system for legacy Network Source of Truth.
@@ -59,3 +59,6 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  --config PATH         Fleet TOML configuration file whose [policy] and [[sites]] tables supply
+                        defaults for subcommands; explicit flags always win. Give it before the
+                        subcommand.

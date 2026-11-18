@@ -31,7 +31,8 @@ options:
   --tcp-ports TCP_PORTS [TCP_PORTS ...]
                         TCP ports to probe on discovered hosts.
   --max-concurrency MAX_CONCURRENCY
-                        Maximum concurrent async network probes (default: 128).
+                        Maximum concurrent async network probes (default: 128, or [policy]
+                        max_concurrent_probes_per_site from --config).
   --max-active-subnets MAX_ACTIVE_SUBNETS
                         Maximum active /24 subnets to sweep within a /16 (default: 32).
   --ping-timeout PING_TIMEOUT
