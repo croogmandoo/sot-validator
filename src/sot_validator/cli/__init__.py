@@ -1,4 +1,4 @@
-"""Unified CLI runner for sot-validator (`extract`, `validate`, `report`, `run`, `history`, `quarantine`, `remediate`, `reconcile`, `campaign`, `preflight`, `reclaim-ports`, `export-modern-sot`, `parity-check`, `ups-health`, `itsm`, `discover`, `serve`, `curate`, `topology`, `fingerprint`, `map-ports`, `diff-scans`, `quality`, `cert-report`, `firmware-check`, `oui lookup`, `audit verify`, `audit head`, `power blast-radius`, `power risk`)."""
+"""Unified CLI runner for sot-validator (`extract`, `validate`, `report`, `run`, `history`, `quarantine`, `remediate`, `reconcile`, `campaign`, `preflight`, `reclaim-ports`, `export-modern-sot`, `parity-check`, `ups-health`, `itsm`, `discover`, `serve`, `curate`, `topology`, `fingerprint`, `map-ports`, `diff-scans`, `quality`, `cert-report`, `firmware-check`, `digest`, `oui lookup`, `audit verify`, `audit head`, `power blast-radius`, `power risk`)."""
 
 from __future__ import annotations
 
