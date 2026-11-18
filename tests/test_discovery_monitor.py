@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import io
 import json
 import logging
+from pathlib import Path
 from typing import Any, Mapping
 import urllib.error
 import urllib.request
@@ -24,6 +25,7 @@ from sot_validator.discovery import (
     SnapshotDiffReport,
 )
 from sot_validator.discovery import monitor
+from sot_validator.enrichment import OuiRegistry, load_oui_directory
 from sot_validator.models import (
     ArpEntry,
     Equipment,
@@ -41,6 +43,7 @@ SITE = "site-42"
 BASE_TS = datetime(2026, 1, 1, 8, 0, tzinfo=timezone.utc)
 CUR_TS = datetime(2026, 1, 1, 9, 0, tzinfo=timezone.utc)
 TOKEN = "s3cr3t-token"
+OUI_DIR = Path(__file__).resolve().parent / "fixtures" / "oui"
 
 
 def _ip(ip: str, *, obj_type: str | None = None, obj_id: str | None = None, mac: str | None = None) -> IPAddress:
@@ -875,3 +878,189 @@ def test_redaction_covers_escaped_secret_forms(caplog) -> None:
         assert "s3cr3t" not in text
         assert hook_url not in text
     assert results[0].detail == "ValueError: Invalid header value b'Bearer ***'"
+
+
+# ---------------------------------------------------------------------------
+# Opt-in OUI annotation
+
+
+def _oui_pair() -> tuple[Site, Site]:
+    baseline = _site(
+        devices=[NetworkDevice(device_id="dev-rtr", site_id=SITE, hostname="rtr-01", management_ip="10.42.10.1", role="router")],
+        equipment=[Equipment(equipment_id="eq-nas", site_id=SITE, name="nas-01")],
+        ip_addresses=[
+            _ip("10.42.10.1", obj_type="NetworkDevice", obj_id="dev-rtr", mac="00:04:96:00:00:01"),
+            _ip("10.42.10.9", mac="70:b3:d5:12:3a:bc"),
+            _ip("10.42.10.30", mac="44:61:32:00:00:30"),
+            _ip("10.42.10.31"),
+        ],
+        subnets=[Subnet(subnet_id="sn-10", site_id=SITE, cidr="10.42.10.0/24")],
+    )
+    current = _site(
+        ip_addresses=[
+            _ip("10.42.10.9", mac="70-B3-D5-1F-FF-FF"),
+            _ip("10.42.10.20", mac="02:11:22:33:44:55"),
+            _ip("10.42.10.21", mac="00:50:56:9a:00:21"),
+            _ip("10.42.10.22", mac="aa:9c:6c:00:00:22"),
+            _ip("10.42.10.23", mac="01:00:5e:00:00:23"),
+            _ip("10.42.10.100"),
+        ],
+        subnets=[
+            Subnet(subnet_id="sn-10", site_id=SITE, cidr="10.42.10.0/24"),
+            Subnet(subnet_id="sn-20", site_id=SITE, cidr="10.42.20.0/24", gateway="10.42.20.1"),
+        ],
+    )
+    return baseline, current
+
+
+def _annotations_by_key(report: SnapshotDiffReport) -> dict[tuple[str, str], Any]:
+    return {
+        (e["event_type"], e["ip"] or e["target_id"]): e.get("mac_annotations")
+        for e in report.to_dict()["events"]
+    }
+
+
+def test_oui_annotation_attached_to_mac_carrying_events() -> None:
+    baseline, current = _oui_pair()
+    report = _diff(baseline, current, oui_registry=load_oui_directory(OUI_DIR))
+    got = _annotations_by_key(report)
+    assert got == {
+        ("CRITICAL_ASSET_OFFLINE", "10.42.10.1"): {
+            "previous": {"mac": "00:04:96:00:00:01", "vendor": "Extreme Networks Headquarters", "class": "universal"},
+        },
+        ("HOST_WENT_OFFLINE", "10.42.10.30"): {
+            "previous": {"mac": "44:61:32:00:00:30", "vendor": "Ecobee", "class": "universal"},
+        },
+        ("HOST_WENT_OFFLINE", "10.42.10.31"): None,
+        ("HOST_WENT_OFFLINE", "eq-nas"): None,
+        ("NEW_HOST_JOINED", "10.42.10.20"): {
+            "current": {"mac": "02:11:22:33:44:55", "vendor": None, "class": "locally_administered"},
+        },
+        ("NEW_HOST_JOINED", "10.42.10.21"): {
+            "current": {"mac": "00:50:56:9a:00:21", "vendor": "VMware, Inc.", "class": "universal"},
+        },
+        ("NEW_HOST_JOINED", "10.42.10.22"): {
+            "current": {"mac": "aa:9c:6c:00:00:22", "vendor": "Ubiquiti UniFi", "class": "locally_administered"},
+        },
+        ("NEW_HOST_JOINED", "10.42.10.23"): {
+            "current": {"mac": "01:00:5e:00:00:23", "vendor": None, "class": "multicast"},
+        },
+        ("NEW_HOST_JOINED", "10.42.10.100"): None,
+        ("MAC_ADDRESS_CHANGED", "10.42.10.9"): {
+            "previous": {"mac": "70:b3:d5:12:3a:bc", "vendor": "Tiny Block, Small Co", "class": "universal"},
+            "current": {"mac": "70:b3:d5:1f:ff:ff", "vendor": "Block Holder, Medium Ltd", "class": "universal"},
+        },
+        ("NEW_SUBNET_DISCOVERED", "10.42.20.1"): None,
+    }
+    events = report.to_dict()["events"]
+    for event in events:
+        if "mac_annotations" in event:
+            assert list(event)[-1] == "mac_annotations"
+    # Events without a MAC carry no key at all, not a null.
+    no_mac = [e for e in events if e["event_type"] == "NEW_SUBNET_DISCOVERED"]
+    assert no_mac and all("mac_annotations" not in e for e in no_mac)
+
+
+def test_record_level_offline_event_is_never_annotated() -> None:
+    baseline = _site(
+        devices=[NetworkDevice(device_id="dev-ap", site_id=SITE, hostname="00:50:56:00:00:01", management_ip="10.42.10.60", role="ap")],
+    )
+    report = _diff(baseline, _site(), oui_registry=load_oui_directory(OUI_DIR))
+    [event] = report.events
+    assert event.previous_value == "00:50:56:00:00:01"
+    assert event.mac_annotations is None
+    assert "mac_annotations" not in event.to_dict()
+
+
+def test_oui_annotation_builtin_registry_fallback() -> None:
+    baseline, current = _oui_pair()
+    got = _annotations_by_key(_diff(baseline, current, oui_registry=OuiRegistry()))
+    assert got[("CRITICAL_ASSET_OFFLINE", "10.42.10.1")]["previous"]["vendor"] == "Extreme Networks"
+    assert got[("NEW_HOST_JOINED", "10.42.10.21")]["current"] == {
+        "mac": "00:50:56:9a:00:21",
+        "vendor": None,
+        "class": "universal",
+    }
+
+
+def test_oui_registry_does_not_change_ids_severity_order_or_counts() -> None:
+    baseline, current = _oui_pair()
+    plain = _diff(baseline, current)
+    annotated = _diff(baseline, current, oui_registry=load_oui_directory(OUI_DIR))
+    assert [(e.event_id, e.event_type, e.severity, e.summary) for e in plain.events] == [
+        (e.event_id, e.event_type, e.severity, e.summary) for e in annotated.events
+    ]
+    assert plain.summary_counts == annotated.summary_counts
+    assert plain.highest_severity == annotated.highest_severity
+    plain_events = plain.to_dict()["events"]
+    assert annotated.to_dict()["events"] != plain_events
+    stripped = []
+    for event in annotated.to_dict()["events"]:
+        event.pop("mac_annotations", None)
+        stripped.append(event)
+    assert stripped == plain_events
+
+
+def test_oui_registry_none_output_is_byte_identical() -> None:
+    baseline, current = _oui_pair()
+    default = _diff(baseline, current)
+    explicit = _diff(baseline, current, oui_registry=None)
+    assert default.to_json() == explicit.to_json()
+    assert default.to_json(indent=2) == explicit.to_json(indent=2)
+    assert default.to_markdown() == explicit.to_markdown()
+    assert json.dumps(monitor._drift_payload(default)) == json.dumps(monitor._drift_payload(explicit))
+    assert "mac_annotations" not in default.to_json()
+    for event in default.to_dict()["events"]:
+        assert list(event) == [
+            "event_id",
+            "event_type",
+            "severity",
+            "site_id",
+            "target_id",
+            "ip",
+            "previous_value",
+            "current_value",
+            "detected_at",
+            "summary",
+        ]
+    assert list(default.to_dict()) == [
+        "site_id",
+        "baseline_timestamp",
+        "current_timestamp",
+        "summary_counts",
+        "highest_severity",
+        "events",
+    ]
+    assert "| Severity | Type | Target | IP | Previous | Current | Summary |\n" in default.to_markdown()
+    assert "MAC vendor" not in default.to_markdown()
+
+
+def test_oui_annotated_markdown_and_payload(tmp_path: Path) -> None:
+    oui_csv = tmp_path / "oui.csv"
+    oui_csv.write_text(
+        "Registry,Assignment,Organization Name\nMA-L,005056,Pipe|Vendor\n", encoding="utf-8"
+    )
+    baseline, current = _oui_pair()
+    report = _diff(baseline, current, oui_registry=OuiRegistry.from_ieee_csv(oui_csv))
+    md = report.to_markdown()
+    assert "| Severity | Type | Target | IP | Previous | Current | Summary | MAC vendor |" in md
+    assert "|---|---|---|---|---|---|---|---|" in md
+    rows = [line for line in md.splitlines() if line.startswith("| ") and "Severity" not in line]
+    assert len(rows) == len(report.events)
+    by_ip = {row.split(" | ")[3]: row for row in rows}
+    assert by_ip["10.42.10.21"].endswith("| current: Pipe\\|Vendor (universal) |")
+    assert by_ip["10.42.10.20"].endswith("| current: unknown (locally_administered) |")
+    assert by_ip["10.42.10.9"].endswith(
+        "| previous: unknown (universal); current: unknown (universal) |"
+    )
+    assert by_ip["10.42.10.1"].endswith("| previous: Extreme Networks (universal) |")
+    assert by_ip["10.42.20.1"].endswith("| - |")
+
+    payload = monitor._drift_payload(report)
+    assert payload["events"] == report.to_dict()["events"]
+    assert any("mac_annotations" in event for event in payload["events"])
+    plain_payload = monitor._drift_payload(_diff(baseline, current))
+    assert set(payload) == set(plain_payload)
+    for key in payload:
+        if key != "events":
+            assert payload[key] == plain_payload[key]

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Mapping
+import csv
 import json
 from pathlib import Path
 from typing import Any, Optional
 
 from sot_validator.cli._common import (
+    INPUT_ERRORS,
     _add_source_arguments,
+    _input_error,
     _load_json_object_list,
     _load_single_site_snapshot,
     _load_validation_results_file,
@@ -23,6 +26,7 @@ from sot_validator.discovery import (
     ServiceBannerFingerprinter,
     SnapshotDiffEngine,
 )
+from sot_validator.enrichment import OuiRegistry, load_oui_directory
 from sot_validator.models import ValidationResult
 from sot_validator.topology import (
     DevicePortManager,
@@ -301,6 +305,12 @@ def cmd_map_ports(args: argparse.Namespace) -> int:
 
 
 def cmd_diff_scans(args: argparse.Namespace) -> int:
+    oui_registry: Optional[OuiRegistry] = None
+    if getattr(args, "oui_dir", None) is not None:
+        try:
+            oui_registry = load_oui_directory(args.oui_dir)
+        except (*INPUT_ERRORS, csv.Error) as exc:
+            return _input_error("--oui-dir", args.oui_dir, exc)
     baseline = _load_single_site_snapshot(Path(args.baseline), args)
     current = _load_single_site_snapshot(Path(args.current), args)
 
@@ -308,7 +318,9 @@ def cmd_diff_scans(args: argparse.Namespace) -> int:
     if getattr(args, "curation_db", None) is not None:
         store, _ = _open_curation_store(args.curation_db)
     try:
-        report = SnapshotDiffEngine().diff(baseline, current, curation=store)
+        report = SnapshotDiffEngine().diff(
+            baseline, current, curation=store, oui_registry=oui_registry
+        )
     finally:
         if store is not None:
             store.close()
@@ -549,5 +561,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         type=Path,
         default=None,
         help='JSON list of alert targets or {"targets": [...]} ({"kind", "destination", "token"?, "name"?}).',
+    )
+    diff_scans_parser.add_argument(
+        "--oui-dir",
+        type=Path,
+        default=None,
+        help="Directory of IEEE MA-L/MA-M/MA-S CSV exports to load (every *.csv, non-recursive); adds mac_annotations (vendor and class) to MAC-carrying drift events and a MAC vendor Markdown column (default: no OUI annotation).",
     )
     diff_scans_parser.set_defaults(func=cmd_diff_scans)

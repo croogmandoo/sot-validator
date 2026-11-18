@@ -5,6 +5,7 @@ from __future__ import annotations
 from sot_validator.reconciliation.reconciler import (
     ALL_DISCREPANCY_TYPES,
     DISCREPANCY_CSV_COLUMNS,
+    DISCREPANCY_OUI_CSV_COLUMNS,
     ONBOARDING_CSV_COLUMNS,
     VALID_DISCREPANCY_SOURCES,
     DiscrepancyRecord,
@@ -16,6 +17,7 @@ from sot_validator.reconciliation.reconciler import (
 __all__ = [
     "ALL_DISCREPANCY_TYPES",
     "DISCREPANCY_CSV_COLUMNS",
+    "DISCREPANCY_OUI_CSV_COLUMNS",
     "DiscrepancyRecord",
     "DiscrepancyType",
     "InventoryReconciler",

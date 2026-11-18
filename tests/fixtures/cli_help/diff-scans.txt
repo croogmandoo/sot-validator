@@ -1,6 +1,7 @@
 usage: sot-validator diff-scans [-h] --baseline BASELINE --current CURRENT
                                 [--curation-db CURATION_DB] [--output-json OUTPUT_JSON]
                                 [--output-md OUTPUT_MD] [--alert-file ALERT_FILE]
+                                [--oui-dir OUI_DIR]
 
 options:
   -h, --help            show this help message and exit
@@ -16,3 +17,6 @@ options:
   --alert-file ALERT_FILE
                         JSON list of alert targets or {"targets": [...]} ({"kind", "destination",
                         "token"?, "name"?}).
+  --oui-dir OUI_DIR     Directory of IEEE MA-L/MA-M/MA-S CSV exports to load (every *.csv, non-
+                        recursive); adds mac_annotations (vendor and class) to MAC-carrying drift
+                        events and a MAC vendor Markdown column (default: no OUI annotation).
