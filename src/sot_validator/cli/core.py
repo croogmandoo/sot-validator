@@ -10,15 +10,24 @@ from typing import Any, Optional
 from sot_validator.cli._common import (
     _add_source_arguments,
     _add_validation_arguments,
+    _build_classification_engine,
     _evaluate_sites,
     _extract_sites,
     _has_source_flags,
     _load_validation_results_with_timestamp,
     _write_validation_results_file,
 )
+from sot_validator.cli._ops_run import (
+    EXIT_CODE_EPILOG,
+    OpsRunProgress,
+    add_lock_file_argument,
+    has_actionable_findings,
+    run_with_ops_contract,
+)
 from sot_validator.extraction import SnapshotStore
 from sot_validator.itsm import JsonFileItsmSink
-from sot_validator.models import Site
+from sot_validator.models import Site, ValidationResult
+from sot_validator.ops import SiteStatus
 from sot_validator.reconciliation import ReconciliationReport
 from sot_validator.remediation import (
     DryRunActionPlan,
@@ -254,6 +263,14 @@ def cmd_report(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     output_dir = Path(args.output_dir or "./output")
+    return run_with_ops_contract(
+        "run", args, output_dir, lambda progress: _run_body(args, output_dir, progress)
+    )
+
+
+def _run_body(
+    args: argparse.Namespace, output_dir: Path, progress: OpsRunProgress
+) -> tuple[list[SiteStatus], list[str], bool]:
     snapshot_dir = (
         Path(args.snapshot_dir)
         if args.snapshot_dir is not None
@@ -267,9 +284,32 @@ def cmd_run(args: argparse.Namespace) -> int:
     sites = _extract_sites(
         args, snapshot_dir, default_to_fixtures=default_fixtures
     )
-    results, eval_time = _evaluate_sites(args, sites)
 
-    _write_validation_results_file(results, output_dir, generated_at=eval_time)
+    # Classify each site on its own so one failing site does not fail the run.
+    engine, eval_time = _build_classification_engine(args, sites)
+    include_ips = getattr(args, "include_ips", True)
+    results: list[ValidationResult] = []
+    ok_sites: list[Site] = []
+    for site in sites:
+        try:
+            site_results = engine.classify_site(
+                site,
+                evaluation_time=eval_time,
+                include_ip_addresses=include_ips,
+            )
+        except Exception as exc:
+            progress.sites.append(
+                SiteStatus(site.site_id, "failed", type(exc).__name__)
+            )
+            continue
+        results.extend(site_results)
+        ok_sites.append(site)
+        progress.sites.append(SiteStatus(site.site_id, "ok"))
+
+    results_path = _write_validation_results_file(
+        results, output_dir, generated_at=eval_time
+    )
+    progress.output_files.append(str(results_path))
     plan = DryRunActionPlanGenerator(generated_at=eval_time).generate_plan(
         results, generated_at=eval_time
     )
@@ -281,11 +321,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     paths = generate_all_reports(
         results,
         output_dir,
-        sites=sites,
+        sites=ok_sites,
         action_plan=plan,
         generated_at=eval_time,
         include_html_dashboard=want_html,
     )
+    progress.output_files.extend(str(path) for path in paths.values())
 
     html_output_arg = getattr(args, "html_output", None)
     if html_output_arg is not None:
@@ -296,8 +337,9 @@ def cmd_run(args: argparse.Namespace) -> int:
                 paths["html_dashboard"].read_text(encoding="utf-8"),
                 encoding="utf-8",
             )
+            progress.output_files.append(str(custom_html_path))
 
-    return 0
+    return progress.sites, progress.output_files, has_actionable_findings(results)
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -434,6 +476,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     run_parser = subparsers.add_parser(
         "run",
         help="Execute end-to-end extraction, signal validation, multi-format reporting, and Phase 2 dry-run plan generation.",
+        epilog=EXIT_CODE_EPILOG,
     )
     run_parser.add_argument(
         "--snapshot-dir",
@@ -459,6 +502,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         help="Optional custom output path for the HTML5 dashboard.",
     )
+    add_lock_file_argument(run_parser)
     _add_source_arguments(run_parser)
     _add_validation_arguments(run_parser)
     run_parser.set_defaults(func=cmd_run)

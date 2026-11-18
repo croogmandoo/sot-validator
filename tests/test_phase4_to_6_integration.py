@@ -303,7 +303,7 @@ def test_cli_end_to_end_phase4_to_phase6_pipeline(tmp_path: Path) -> None:
                 str(out_dir),
             ]
         )
-        == 0
+        == 1
     )
 
     # 2. Phase 4 reclaim-ports CLI
