@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from datetime import datetime, timezone
 import email
+import io
 from email import policy as email_policy
 import json
 import logging
@@ -23,6 +24,7 @@ from sot_validator.campaign.digest_sinks import DigestSink, SmtpDigestSink, Webh
 from sot_validator.discovery.monitor import ScanDriftEvent
 from sot_validator.lifecycle.certificates import CertificateFinding
 from sot_validator.models import ValidationClassification, ValidationResult
+from sot_validator.observability.logging_setup import configure_logging
 from sot_validator.quality.checks import QualityFinding
 from sot_validator.reporting import (
     CATEGORY_CERTIFICATES_30D, CATEGORY_DRIFT, CATEGORY_HEALTH_DROPS, CATEGORY_QUALITY_ERRORS,
@@ -797,3 +799,136 @@ def test_webhook_default_sender_is_drift_sender():
 
     sink = WebhookDigestSink("https://example.test/hook")
     assert sink.sender is monitor._default_sender
+
+
+SENTINEL = "TOK3NSENTINEL"
+SENTINEL_URL = f"https://user:{SENTINEL}@hooks.example.test/{SENTINEL}/x?key={SENTINEL}"
+
+
+@pytest.fixture
+def reset_sot_logger():
+    logger = logging.getLogger("sot_validator")
+    handlers = list(logger.handlers)
+    level = logger.level
+    yield
+    for handler in list(logger.handlers):
+        if handler not in handlers:
+            logger.removeHandler(handler)
+    logger.setLevel(level)
+
+
+def _capture_logs(fmt) -> io.StringIO:
+    stream = io.StringIO()
+    configure_logging("WARNING", fmt=fmt, stream=stream)
+    return stream
+
+
+class _DirectResultSink(DigestSink):
+    """Hands a raw destination straight to _result, as a careless future sink might."""
+
+    kind = "direct"
+    name = "direct"
+
+    def __init__(self, destination):
+        self.raw = destination
+
+    def send(self, digest):
+        return self._result(self.raw, f"boom {self.raw}")
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+@pytest.mark.parametrize(
+    "sender_kwargs", [{"exc": OSError(f"cannot reach {SENTINEL_URL}")}, {"status": 503}],
+    ids=["exception", "http-503"],
+)
+def test_webhook_sentinel_never_logged_or_returned(reset_sot_logger, fmt, sender_kwargs):
+    stream = _capture_logs(fmt)
+    sender, calls = _recording_sender(**sender_kwargs)
+    result = WebhookDigestSink(SENTINEL_URL, sender=sender).send(_nonempty_digest())
+    output = stream.getvalue()
+    assert calls[0][1] == SENTINEL_URL
+    assert result.status == "failed"
+    assert result.destination == "https://hooks.example.test"
+    for text in (output, result.destination, result.detail):
+        assert SENTINEL not in text
+    assert "https://hooks.example.test" in output and "failed" in output
+    if "status" in sender_kwargs:
+        assert result.detail == "HTTP 503"
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+def test_result_boundary_redacts_raw_url_destination(reset_sot_logger, fmt):
+    stream = _capture_logs(fmt)
+    result = _DirectResultSink(SENTINEL_URL).send(_nonempty_digest())
+    output = stream.getvalue()
+    assert result.status == "failed"
+    assert result.destination == "https://hooks.example.test"
+    for text in (output, result.destination, result.detail):
+        assert SENTINEL not in text
+    assert result.detail.startswith("boom ")
+    assert "https://hooks.example.test" in output and "failed" in output
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+@pytest.mark.parametrize(
+    "destination",
+    [f"{SENTINEL}-not-a-url", f"hooks.example.test/{SENTINEL}", f"mailto:{SENTINEL}@x", ""],
+)
+def test_result_boundary_redacts_non_url_destination(reset_sot_logger, fmt, destination):
+    stream = _capture_logs(fmt)
+    result = _DirectResultSink(destination).send(_nonempty_digest())
+    output = stream.getvalue()
+    assert result.destination == "<redacted>"
+    assert SENTINEL not in output and SENTINEL not in result.detail
+    assert "<redacted>" in output
+
+
+def test_result_boundary_keeps_port_and_ipv6_brackets():
+    for raw, safe in (
+        ("https://u:p@h.example:8443/a?b=c#f", "https://h.example:8443"),
+        ("smtp://[::1]:25", "smtp://[::1]:25"),
+        ("smtp://[bad", "<redacted>"),
+    ):
+        assert _DirectResultSink(raw).send(_nonempty_digest()).destination == safe
+
+
+def test_redact_sentinel_success_result_keeps_destination_and_no_detail():
+    sender, _ = _recording_sender(204)
+    result = WebhookDigestSink(SENTINEL_URL, sender=sender).send(_nonempty_digest())
+    assert (result.status, result.destination, result.detail) == (
+        "sent", "https://hooks.example.test", None
+    )
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+def test_smtp_failure_redacts_credentials_in_logs(
+    reset_sot_logger, fake_smtp, monkeypatch, fmt
+):
+    monkeypatch.setenv("DIGEST_SMTP_USER", "digest-mailer-SENTINEL")
+    monkeypatch.setenv("DIGEST_SMTP_PASS", "Pw-SENTINEL-55")
+
+    def refuse(self, host, port, timeout):
+        raise OSError(f"connection to {host}:{port} refused for digest-mailer-SENTINEL")
+
+    monkeypatch.setattr(fake_smtp, "__init__", refuse)
+    stream = _capture_logs(fmt)
+    sink = _sink(587, host="mail.example.test", starttls=True)
+    result = sink.send(_nonempty_digest())
+    output = stream.getvalue()
+    assert result.status == "failed"
+    assert result.destination == "smtp://mail.example.test:587"
+    assert "smtp://mail.example.test:587" in output and "failed" in output
+    for secret in ("digest-mailer-SENTINEL", "Pw-SENTINEL-55"):
+        assert secret not in output and secret not in _all_fields(result)
+
+
+def test_smtp_ipv6_destination_redact_keeps_brackets(fake_smtp, monkeypatch):
+    sink = SmtpDigestSink("::1", 25, "a@x", ["b@x"])
+    assert sink.destination == "smtp://[::1]:25"
+
+    def refuse(self, host, port, timeout):
+        raise OSError("refused")
+
+    monkeypatch.setattr(fake_smtp, "__init__", refuse)
+    result = sink.send(_nonempty_digest())
+    assert result.status == "failed" and result.destination == "smtp://[::1]:25"
