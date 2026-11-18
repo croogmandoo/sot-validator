@@ -896,6 +896,24 @@ NAMESPACE_CASES = [
          "func": "cmd_power_risk"},
         id="power-risk",
     ),
+    pytest.param(
+        ["vlan-audit", "--snapshot", "site.json", "--site-id", "site-001",
+         "--fdb", "a.json", "--fdb", "b.json", "--router-arp", "arp.json",
+         "--dhcp-scopes", "scopes.json", "--dhcp-expected", "expected.txt",
+         "--output-json", "v.json", "--output-md", "v.md"],
+        {"subcommand": "vlan-audit",
+         "fleet_config_path": None,
+         "snapshot": Path("site.json"),
+         "site_id": "site-001",
+         "fdb": [Path("a.json"), Path("b.json")],
+         "router_arp": [Path("arp.json")],
+         "dhcp_scopes": Path("scopes.json"),
+         "dhcp_expected": Path("expected.txt"),
+         "output_json": Path("v.json"),
+         "output_md": Path("v.md"),
+         "func": "cmd_vlan_audit"},
+        id="vlan-audit",
+    ),
 ]
 
 ALIAS_CASES = [
