@@ -1,0 +1,26 @@
+usage: sot-validator curate-import [-h] --curation-db CURATION_DB --snapshot SNAPSHOT --csv CSV
+                                   [--preview] [--apply] [--confirm-token CONFIRM_TOKEN]
+                                   [--as-of AS_OF] [--actor ACTOR] [--json]
+
+Bulk-import field edits from a patch CSV into an existing SQLite curation database. --preview
+opens the database read-only, prints every row's diff and a confirm token, and writes nothing.
+--apply --confirm-token TOKEN rebuilds the preview and writes the change rows in one transaction
+only if the token still matches. JSON curation files are not supported, and a missing database is
+never created.
+
+options:
+  -h, --help            show this help message and exit
+  --curation-db CURATION_DB
+                        Existing SQLite CurationStore database. JSON curation files are not
+                        supported.
+  --snapshot SNAPSHOT   Site JSON snapshot file or SnapshotStore directory the CSV edits apply to.
+  --csv CSV             Patch CSV with columns record_type, record_id, field, new_value, reason.
+  --preview             Print the per-row diff, status counts, and confirm token; never writes.
+  --apply               Write the change rows; requires --confirm-token from a --preview of the
+                        same CSV.
+  --confirm-token CONFIRM_TOKEN
+                        Confirm token printed by --preview; only used with --apply.
+  --as-of AS_OF         Optional ISO-8601 UTC time the CSV was prepared; records changed after it
+                        are conflicts.
+  --actor ACTOR         Operator identifier recorded in the audit log (default: cli-operator).
+  --json                Print the preview or apply result as JSON.

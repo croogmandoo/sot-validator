@@ -19,6 +19,7 @@ import urllib.request
 
 from sot_validator.curation.store import CurationStore, ItemEditPatch
 from sot_validator.discovery.scanner import DiscoveredHost, _normalize_mac
+from sot_validator.enrichment import OuiRegistry, mac_annotation
 from sot_validator.models import (
     IPAddress,
     Site,
@@ -125,6 +126,8 @@ class ScanDriftEvent:
     current_value: DriftValue
     detected_at: datetime
     summary: str
+    # Only set when diffed with an OUI registry and the event carries a MAC.
+    mac_annotations: Optional[dict[str, dict[str, Any]]] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.event_type, ScanDriftEventType):
@@ -151,7 +154,7 @@ class ScanDriftEvent:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data = {
             "event_id": self.event_id,
             "event_type": self.event_type.value,
             "severity": self.severity,
@@ -171,6 +174,11 @@ class ScanDriftEvent:
             "detected_at": self.detected_at.isoformat(),
             "summary": self.summary,
         }
+        if self.mac_annotations is not None:
+            data["mac_annotations"] = {
+                side: dict(annotation) for side, annotation in self.mac_annotations.items()
+            }
+        return data
 
 
 def _empty_summary_counts() -> dict[str, Any]:
@@ -191,6 +199,16 @@ def _markdown_cell(value: DriftValue) -> str:
     return text.replace("|", "\\|")
 
 
+def _mac_vendor_cell(event: ScanDriftEvent) -> str:
+    if not event.mac_annotations:
+        return "-"
+    parts = [
+        f"{side}: {annotation['vendor'] or 'unknown'} ({annotation['class']})"
+        for side, annotation in event.mac_annotations.items()
+    ]
+    return _markdown_cell("; ".join(parts))
+
+
 @dataclass
 class SnapshotDiffReport:
     """Drift report produced by diffing a baseline and current snapshot of one site."""
@@ -199,6 +217,7 @@ class SnapshotDiffReport:
     baseline_timestamp: Optional[datetime]
     current_timestamp: datetime
     events: list[ScanDriftEvent] = field(default_factory=list)
+    oui_annotated: bool = False
     summary_counts: dict[str, Any] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -275,8 +294,14 @@ class SnapshotDiffReport:
         if not self.events:
             lines.append("No drift detected.")
         else:
-            lines.append("| Severity | Type | Target | IP | Previous | Current | Summary |")
-            lines.append("|---|---|---|---|---|---|---|")
+            if self.oui_annotated:
+                lines.append(
+                    "| Severity | Type | Target | IP | Previous | Current | Summary | MAC vendor |"
+                )
+                lines.append("|---|---|---|---|---|---|---|---|")
+            else:
+                lines.append("| Severity | Type | Target | IP | Previous | Current | Summary |")
+                lines.append("|---|---|---|---|---|---|---|")
             for event in self.events:
                 cells = (
                     _markdown_cell(event.severity),
@@ -287,6 +312,8 @@ class SnapshotDiffReport:
                     _markdown_cell(event.current_value),
                     _markdown_cell(event.summary),
                 )
+                if self.oui_annotated:
+                    cells += (_mac_vendor_cell(event),)
                 lines.append("| " + " | ".join(cells) + " |")
         return "\n".join(lines) + "\n"
 
@@ -525,6 +552,7 @@ class SnapshotDiffEngine:
         current_open_ports: Optional[
             Mapping[str, Iterable[int]] | Sequence[DiscoveredHost]
         ] = None,
+        oui_registry: Optional[OuiRegistry] = None,
     ) -> SnapshotDiffReport:
         if not isinstance(baseline, Site) or not isinstance(current, Site):
             raise ValueError("baseline and current must be Site instances")
@@ -605,7 +633,16 @@ class SnapshotDiffEngine:
             previous_value: DriftValue,
             current_value: DriftValue,
             summary: str,
+            mac_sides: tuple[str, ...] = (),
         ) -> None:
+            annotations: Optional[dict[str, dict[str, Any]]] = None
+            if oui_registry is not None:
+                sides = {"previous": previous_value, "current": current_value}
+                annotations = {
+                    side: mac_annotation(oui_registry, sides[side])
+                    for side in mac_sides
+                    if sides[side] is not None
+                } or None
             events.append(
                 ScanDriftEvent(
                     event_id=_drift_event_id(
@@ -620,6 +657,7 @@ class SnapshotDiffEngine:
                     current_value=current_value,
                     detected_at=resolved_detected,
                     summary=summary,
+                    mac_annotations=annotations,
                 )
             )
 
@@ -638,6 +676,7 @@ class SnapshotDiffEngine:
                 None,
                 mac,
                 f"New host {target} joined at {ip}{mac_text}.",
+                mac_sides=("current",),
             )
 
         # IP-level offline hosts.
@@ -667,6 +706,7 @@ class SnapshotDiffEngine:
                 mac,
                 None,
                 summary,
+                mac_sides=("previous",),
             )
 
         # Record-level offline devices and equipment not covered above.
@@ -747,6 +787,7 @@ class SnapshotDiffEngine:
                     old_mac,
                     new_mac,
                     summary,
+                    mac_sides=("previous", "current"),
                 )
             if (
                 base_ports is not None
@@ -827,6 +868,7 @@ class SnapshotDiffEngine:
             baseline_timestamp=resolved_baseline,
             current_timestamp=resolved_current,
             events=events,
+            oui_annotated=oui_registry is not None,
         )
 
 

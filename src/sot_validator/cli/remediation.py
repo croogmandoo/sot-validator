@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
 import sqlite3
 from typing import Any, Optional
 
 from sot_validator.cli._common import (
+    INPUT_ERRORS,
     _add_source_arguments,
     _infer_evaluation_time,
+    _input_error,
     _resolve_sites_for_command,
 )
+from sot_validator.enrichment import OuiRegistry, load_oui_directory
 from sot_validator.extraction import SnapshotStore
 from sot_validator.itsm import ItsmTicketRequest, JsonFileItsmSink
 from sot_validator.reconciliation import InventoryReconciler
@@ -153,6 +157,12 @@ def cmd_remediate(args: argparse.Namespace) -> int:
 
 
 def cmd_reconcile(args: argparse.Namespace) -> int:
+    oui_registry: Optional[OuiRegistry] = None
+    if getattr(args, "oui_dir", None) is not None:
+        try:
+            oui_registry = load_oui_directory(args.oui_dir)
+        except (*INPUT_ERRORS, csv.Error) as exc:
+            return _input_error("--oui-dir", args.oui_dir, exc)
     output_dir = Path(args.output_dir or "./output")
     output_dir.mkdir(parents=True, exist_ok=True)
     sites = _resolve_sites_for_command(
@@ -193,6 +203,8 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
         arp_entries=arp_entries,
         snmp_targets=snmp_targets,
         icmp_responses=icmp_responses,
+        oui_registry=oui_registry,
+        exclude_randomized_macs=getattr(args, "exclude_randomized_macs", False),
     )
     report = reconciler.reconcile(sites, generated_at=eval_time)
 
@@ -358,6 +370,18 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         type=str,
         default=None,
         help="Optional ISO-8601 timestamp for the reconciliation report.",
+    )
+    reconcile_parser.add_argument(
+        "--oui-dir",
+        type=Path,
+        default=None,
+        help="Directory of IEEE MA-L/MA-M/MA-S CSV exports to load (every *.csv, non-recursive); adds observed_mac_vendor/observed_mac_class to the report JSON and discrepancy CSV (default: no OUI annotation).",
+    )
+    reconcile_parser.add_argument(
+        "--exclude-randomized-macs",
+        action="store_true",
+        default=False,
+        help="Leave untracked records whose MAC is locally-administered with no OUI match (randomised) out of the shadow-IT counts and onboarding templates, listing them under excluded_randomized_mac_discrepancies in the report JSON; ATTRIBUTE_MISMATCH is never excluded (default: off, every MAC is counted).",
     )
     _add_source_arguments(reconcile_parser)
     reconcile_parser.set_defaults(func=cmd_reconcile)
