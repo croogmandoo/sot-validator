@@ -215,13 +215,31 @@ PYTHONPATH=src python3 -m sot_validator itsm \
 
 `sot_validator.config.load_config(path)` reads a single TOML fleet file (sites with their `10.x.0.0/16` block and active `/24` subnets, vCenters, SNMP profiles, Proxmox nodes and a `[policy]` table of thresholds and concurrency limits) and returns a frozen, validated `AppConfig`. See [`examples/sot-validator.example.toml`](examples/sot-validator.example.toml) for the full schema.
 
-Secrets (`password`, `community`, `token_secret`) must be written as `${env:NAME}` references, for example `password = "${env:SOT_VCENTER_PASSWORD}"`; the value is read from the environment at load time, literal secrets are rejected, and resolved secrets are redacted as `***` in `repr`, `str` and `to_dict()`.
+Secrets (`password`, `community`, `token_secret`) must be written as `${env:NAME}` references, for example `password = "${env:SOT_VCENTER_PASSWORD}"`; the reference shape is checked at load time and literal secrets are rejected, but the variable is only read when a command needs the secret (`SecretValue.reveal()`), so a config whose secret variables are unset still loads. No CLI command reveals a secret yet, and secrets are redacted as `***` in `repr`, `str` and `to_dict()`.
 
-The optional `[retention]` table sets history retention limits: `max_age_days` prunes runs older than that many days, and `max_runs_per_site` keeps only the newest N runs of each site (a multi-site run is kept while any of its sites still keeps it). Both keys are optional positive integers, and leaving them out disables pruning. The only command that reads the fleet file is `history-prune --config <file>`, which is a dry run unless `--apply` is given and works on SQLite history databases only; no other command reads this file yet.
+The optional `[retention]` table sets history retention limits: `max_age_days` prunes runs older than that many days, and `max_runs_per_site` keeps only the newest N runs of each site (a multi-site run is kept while any of its sites still keeps it). Both keys are optional positive integers, and leaving them out disables pruning. `history-prune` applies these limits; it is a dry run unless `--apply` is given and works on SQLite history databases only.
+
+The global `sot-validator --config <file> <command>` flag (given before the subcommand) loads the fleet file once before the command runs and uses it for defaults. A file that cannot be read or fails validation stops every command with one `error: <file>: [<table>] <key>: <reason>` line on stderr and exit code 2, before anything is written.
+
+### Precedence
+
+Precedence is **explicit CLI flag > config file > built-in default**. Without `--config`, every command behaves exactly as before. With it:
+
+| Flag | Commands | Config key | Built-in default |
+| --- | --- | --- | --- |
+| `--active-within-days` | `validate`, `run`, `campaign` | `[policy] last_seen_active_within_days` | `7.0` |
+| `--stale-after-days` | `validate`, `run`, `campaign` | `[policy] last_seen_stale_after_days` | `30.0` |
+| `--min-consecutive-stale-runs` | `quarantine` | `[policy] quarantine_min_stale_runs` | `3` |
+| `--min-consecutive-stale` | `history` | `[policy] quarantine_min_stale_runs` | `0` |
+| `--max-concurrency` | `discover` | `[policy] max_concurrent_probes_per_site` | `128` |
+| `--site-ids` / `--all-sites` | multi-site source commands (`extract`, `validate`, `run`, `campaign`, `preflight`, `ups-health`, `export-modern-sot`, `parity-check`, `reconcile`, `reclaim-ports`) | `[[sites]]` `site_id` list, in file order | all sites |
+
+Keys the file leaves out still take the loader defaults (for example `discover` then uses 32 probes). When the resolved active threshold is greater than the stale threshold, the command exits 2 with one `error:` line naming both values and the config file. `arp_*` thresholds and `max_concurrent_sites` are not used by any command yet. `history-prune` uses its own `--config` when given, otherwise the global `--config`, and exits 2 with an `error:` line when neither is set.
 
 ```bash
 export SOT_VCENTER_PASSWORD=... SOT_SNMP_COMMUNITY=... SOT_PROXMOX_TOKEN_SECRET=...
 PYTHONPATH=src python3 -c "from sot_validator.config import load_config; print(load_config('examples/sot-validator.example.toml'))"
+PYTHONPATH=src python3 -m sot_validator --config examples/sot-validator.example.toml validate --fixtures --output-dir output
 ```
 
 ## Development & Checks

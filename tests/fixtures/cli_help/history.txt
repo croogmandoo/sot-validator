@@ -18,7 +18,7 @@ options:
   --site-id SITE_ID     Optional site ID filter for streaks and drift events.
   --min-consecutive-stale MIN_CONSECUTIVE_STALE
                         Minimum consecutive stale runs filter when listing item streaks (default:
-                        0).
+                        0, or [policy] quarantine_min_stale_runs from --config).
   --export-json EXPORT_JSON
                         Optional path to export full HistoryStore state as JSON.
   --drift-output, --output-file DRIFT_OUTPUT

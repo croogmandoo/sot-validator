@@ -507,16 +507,65 @@ def test_partial_env_reference_is_not_interpolated(tmp_path, monkeypatch):
     assert load_config(_write(tmp_path, text)).vcenters[0].username == "svc-${env:SUFFIX}"
 
 
-def test_missing_env_var_names_variable(tmp_path, monkeypatch):
+def _reveal_error(secret: SecretValue, path: Path, table: str, key: str) -> str:
+    """Expect reveal() to raise a ConfigError naming the file, table and key."""
+    with pytest.raises(ConfigError) as excinfo:
+        secret.reveal()
+    message = str(excinfo.value)
+    assert str(path) in message
+    assert f"[{table}] {key}:" in message
+    return message
+
+
+def test_missing_env_var_loads_and_reveal_names_variable(tmp_path, monkeypatch):
     monkeypatch.delenv("VC_PW", raising=False)
-    message = _error(tmp_path, SITE + VCENTER, "vcenters[0]", "password")
-    assert "VC_PW" in message
+    path = _write(tmp_path, SITE + VCENTER)
+    cfg = load_config(path)
+    message = _reveal_error(cfg.vcenters[0].password, path, "vcenters[0]", "password")
+    assert "environment variable VC_PW is unset or empty" in message
+    monkeypatch.setenv("VC_PW", "late-value")
+    assert cfg.vcenters[0].password.reveal() == "late-value"
 
 
-def test_empty_env_var_counts_as_missing(tmp_path, monkeypatch):
+def test_empty_env_var_counts_as_missing_on_reveal(tmp_path, monkeypatch):
     monkeypatch.setenv("VC_PW", "")
-    message = _error(tmp_path, SITE + VCENTER, "vcenters[0]", "password")
+    path = _write(tmp_path, SITE + VCENTER)
+    cfg = load_config(path)
+    message = _reveal_error(cfg.vcenters[0].password, path, "vcenters[0]", "password")
     assert "VC_PW" in message
+
+
+@pytest.mark.parametrize(
+    "variable, entry, table, key, attr",
+    [
+        ("COMM", '[[snmp_profiles]]\nname = "p"\ncommunity = "${env:COMM}"\n', "snmp_profiles[0]", "community", "snmp_profiles"),
+        (
+            "TOKEN",
+            '[[proxmox]]\nname = "p"\nhost = "h"\ntoken_id = "i"\ntoken_secret = "${env:TOKEN}"\n',
+            "proxmox[0]",
+            "token_secret",
+            "proxmox",
+        ),
+    ],
+)
+def test_every_secret_kind_is_read_on_reveal(tmp_path, monkeypatch, variable, entry, table, key, attr):
+    monkeypatch.delenv(variable, raising=False)
+    path = _write(tmp_path, SITE + entry)
+    secret = getattr(getattr(load_config(path), attr)[0], key)
+    message = _reveal_error(secret, path, table, key)
+    assert variable in message
+    monkeypatch.setenv(variable, "now-set")
+    assert secret.reveal() == "now-set"
+
+
+def test_reveal_error_never_contains_a_value(tmp_path, monkeypatch):
+    monkeypatch.setenv("VC_PW", "s3cr3t")
+    path = _write(tmp_path, SITE + VCENTER)
+    secret = load_config(path).vcenters[0].password
+    monkeypatch.setenv("VC_PW", "")
+    message = _reveal_error(secret, path, "vcenters[0]", "password")
+    assert "s3cr3t" not in message
+    assert repr(secret) == str(secret) == "***"
 
 
 def test_missing_env_var_in_non_secret_field(tmp_path, monkeypatch):
