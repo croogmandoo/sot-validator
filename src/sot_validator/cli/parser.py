@@ -25,6 +25,7 @@ from sot_validator.cli import (
     remediation,
     topology,
     ups,
+    vlan_audit,
     workbench,
 )
 from sot_validator.cli._config import config_error, threshold_conflict
@@ -50,6 +51,7 @@ COMMAND_MODULES = (
     oui,
     audit,
     power,
+    vlan_audit,
 )
 
 
