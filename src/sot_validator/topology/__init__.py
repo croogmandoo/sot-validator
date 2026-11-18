@@ -49,6 +49,8 @@ from sot_validator.topology.power import (
     find_single_fed_critical,
     generate_power_json_report,
     generate_power_markdown_report,
+    generate_power_risk_json_report,
+    generate_power_risk_markdown_report,
     rank_power_risk,
 )
 
@@ -90,6 +92,8 @@ __all__ = [
     "find_single_fed_critical",
     "generate_power_json_report",
     "generate_power_markdown_report",
+    "generate_power_risk_json_report",
+    "generate_power_risk_markdown_report",
     "normalize_mac_address",
     "rank_power_risk",
 ]

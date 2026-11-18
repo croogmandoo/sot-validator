@@ -1,0 +1,10 @@
+usage: sot-validator oui lookup [-h] [--oui-dir OUI_DIR] [--json] MAC [MAC ...]
+
+positional arguments:
+  MAC                MAC address to look up (repeatable; output keeps input order and duplicates).
+
+options:
+  -h, --help         show this help message and exit
+  --oui-dir OUI_DIR  Directory of IEEE MA-L/MA-M/MA-S CSV exports to load (every *.csv, non-
+                     recursive; default: builtin vendor table only).
+  --json             Print {"results": [...]} JSON instead of tab-separated text.

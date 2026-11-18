@@ -1,0 +1,8 @@
+usage: sot-validator oui [-h] {lookup} ...
+
+positional arguments:
+  {lookup}
+    lookup    Look up the vendor and class of one or more MAC addresses.
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,6 @@
+usage: sot-validator audit head [-h] --curation-db CURATION_DB
+
+options:
+  -h, --help            show this help message and exit
+  --curation-db CURATION_DB
+                        Curation SQLite database to read (opened read-only).
