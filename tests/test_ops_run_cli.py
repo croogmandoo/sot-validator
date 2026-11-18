@@ -313,6 +313,21 @@ def test_config_sha256_from_fleet_config_path(command, tmp_path):
     assert _manifest(out)["config_sha256"] == file_sha256(config)
 
 
+@pytest.mark.parametrize("command", COMMANDS)
+def test_config_sha256_from_global_config_flag(command, tmp_path):
+    out = tmp_path / "out"
+    config = tmp_path / "fleet.toml"
+    config.write_text(
+        '[[sites]]\nsite_id = "site-001"\nname = "HQ"\nblock = "10.1.0.0/16"\n'
+        'active_subnets = ["10.1.10.0/24"]\n',
+        encoding="utf-8",
+    )
+    assert main(["--config", str(config), *_argv(command, out)]) == 1
+    data = _manifest(out)
+    assert data["config_sha256"] == file_sha256(config)
+    assert [s["site_id"] for s in data["sites"]] == ["site-001"]
+
+
 # --- Secret-free reasons ---------------------------------------------------------
 
 
