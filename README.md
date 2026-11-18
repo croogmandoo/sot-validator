@@ -209,15 +209,27 @@ PYTHONPATH=src python3 -m sot_validator itsm \
   --tickets-file ./output/itsm_tickets.json \
   --provider servicenow \
   --output-dir ./output
+
+# Render the weekly change digest between two runs (no network I/O), then
+# preview and deliver it to the [digest] targets of the fleet config
+PYTHONPATH=src python3 -m sot_validator digest \
+  --previous-quality ./last-week/quality.json --current-quality ./output/quality.json \
+  --previous-certs ./last-week/certs.json --current-certs ./output/certs.json \
+  --output-dir ./output/digest
+PYTHONPATH=src python3 -m sot_validator --config fleet.toml digest \
+  --previous-quality ./last-week/quality.json --current-quality ./output/quality.json \
+  --send --dry-run
 ```
 
 ## Fleet Configuration (TOML)
 
 `sot_validator.config.load_config(path)` reads a single TOML fleet file (sites with their `10.x.0.0/16` block and active `/24` subnets, vCenters, SNMP profiles, Proxmox nodes and a `[policy]` table of thresholds and concurrency limits) and returns a frozen, validated `AppConfig`. See [`examples/sot-validator.example.toml`](examples/sot-validator.example.toml) for the full schema.
 
-Secrets (`password`, `community`, `token_secret`) must be written as `${env:NAME}` references, for example `password = "${env:SOT_VCENTER_PASSWORD}"`; the reference shape is checked at load time and literal secrets are rejected, but the variable is only read when a command needs the secret (`SecretValue.reveal()`), so a config whose secret variables are unset still loads. No CLI command reveals a secret yet, and secrets are redacted as `***` in `repr`, `str` and `to_dict()`.
+Secrets (`password`, `community`, `token_secret`, and the `[digest.smtp]` `username` / `password` and `[[digest.webhooks]]` `url`) must be written as `${env:NAME}` references, for example `password = "${env:SOT_VCENTER_PASSWORD}"`; the reference shape is checked at load time and literal secrets are rejected, but the variable is only read when a command needs the secret (`SecretValue.reveal()`), so a config whose secret variables are unset still loads. The only CLI command that reveals a secret is `digest --send`, which reveals each `[[digest.webhooks]]` `url` just before delivery (never with `--dry-run`) and never prints it; SMTP credentials are passed to the sink as variable names and read only when it sends. Secrets are redacted as `***` in `repr`, `str` and `to_dict()`.
 
 The optional `[retention]` table sets history retention limits: `max_age_days` prunes runs older than that many days, and `max_runs_per_site` keeps only the newest N runs of each site (a multi-site run is kept while any of its sites still keeps it). Both keys are optional positive integers, and leaving them out disables pruning. `history-prune` applies these limits; it is a dry run unless `--apply` is given and works on SQLite history databases only.
+
+The optional `[digest]` section configures `digest --send` delivery of the weekly change digest. `policy` is `"on_change"` (the default: send only when a category has new items) or `"always"`; `--policy` overrides it. `[digest.smtp]` is at most one SMTP target: `host`, `sender` and a non-empty `recipients` array are required; `port` defaults to `587`, `starttls` to `true` (it may only be `false` with `allow_insecure_localhost = true` and a `localhost` or loopback host), `timeout_seconds` to `10` and `subject` to `"SoT weekly change digest"`. Each `[[digest.webhooks]]` has a unique `name`, a `url` secret and an optional `timeout_seconds`. Before contacting any target, `digest --send` reveals every webhook URL and exits 2 with one `error:` line naming the table, key and variable if it is unset, holds whitespace or control characters, or is not an `http` / `https` URL with a host. `digest --send --dry-run` prints the targets (`smtp://host:port`, sender and recipients; `url=${env:NAME}` for webhooks), the policy decision, the subject and the text body without reading a secret or opening a socket. Without `--send`, `digest` only renders and never reads `[digest]`.
 
 The global `sot-validator --config <file> <command>` flag (given before the subcommand) loads the fleet file once before the command runs and uses it for defaults. A file that cannot be read or fails validation stops every command with one `error: <file>: [<table>] <key>: <reason>` line on stderr and exit code 2, before anything is written.
 
