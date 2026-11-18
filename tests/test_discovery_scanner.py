@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
+import os
+from pathlib import Path
+import secrets
+import sys
+
 import pytest
 
 from sot_validator.classifier import ClassificationEngine
@@ -11,6 +17,11 @@ from sot_validator.discovery import (
     DiscoveryConfig,
     SubnetDiscoveryScanner,
     parse_ip_neigh_output,
+)
+from sot_validator.discovery.scanner import (
+    _default_arp_table_reader,
+    _default_async_ping,
+    _minimal_child_env,
 )
 from sot_validator.models import (
     EquipmentCategory,
@@ -412,3 +423,118 @@ def test_build_site_snapshot_synthesizes_gateway_when_only_hosts_discovered() ->
     assert site.devices[0].role == "router"
     assert len(site.devices[0].ports) == 1
     assert site.devices[0].ports[0].connected_device_id == site.equipment[0].equipment_id
+
+
+_posix_only = pytest.mark.skipif(
+    sys.platform == "win32", reason="fake binaries are POSIX shell scripts"
+)
+
+
+def _write_fake_binary(directory: Path, name: str, body: str) -> None:
+    script = directory / name
+    script.write_text("#!/bin/sh\n" + body)
+    script.chmod(0o755)
+
+
+def _set_sentinel(monkeypatch: pytest.MonkeyPatch) -> tuple[str, str]:
+    value = f"sentinel-{secrets.token_hex(8)}"
+    monkeypatch.setenv("SOT_TEST_SECRET", value)
+    return "SOT_TEST_SECRET", value
+
+
+@_posix_only
+def test_default_ping_child_env_excludes_secrets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name, value = _set_sentinel(monkeypatch)
+    dump = tmp_path / "ping-env.txt"
+    _write_fake_binary(
+        tmp_path,
+        "ping",
+        f"env > '{dump}'\n"
+        "echo 'PING 10.0.0.1 (10.0.0.1) 56(84) bytes of data.'\n"
+        "echo '64 bytes from 10.0.0.1: icmp_seq=1 ttl=64 time=12.3 ms'\n"
+        "exit 0\n",
+    )
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+
+    result = asyncio.run(_default_async_ping("10.0.0.1", 1.0))
+
+    assert result == (True, 12.3)
+    assert dump.exists()
+    dumped = dump.read_text()
+    assert name not in dumped
+    assert value not in dumped
+    assert "PATH=" in dumped
+
+
+@_posix_only
+def test_default_ping_nonzero_exit_is_unreachable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_fake_binary(tmp_path, "ping", "exit 1\n")
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+
+    assert asyncio.run(_default_async_ping("10.0.0.1", 1.0)) == (False, None)
+
+
+@_posix_only
+def test_default_arp_reader_child_env_excludes_secrets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    name, value = _set_sentinel(monkeypatch)
+    dump = tmp_path / "ip-env.txt"
+    _write_fake_binary(
+        tmp_path,
+        "ip",
+        f"env > '{dump}'\n"
+        "echo '10.0.0.5 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE'\n"
+        "exit 0\n",
+    )
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+
+    table = _default_arp_table_reader()
+
+    assert table == parse_ip_neigh_output(
+        "10.0.0.5 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE\n"
+    )
+    assert "10.0.0.5" in table
+    dumped = dump.read_text()
+    assert name not in dumped
+    assert value not in dumped
+
+
+def test_minimal_child_env_keeps_only_path_and_locale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in list(os.environ):
+        if key.startswith("LC_"):
+            monkeypatch.delenv(key)
+    monkeypatch.setenv("PATH", "/opt/test/bin:/usr/bin")
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.setenv("LC_ALL", "C")
+    monkeypatch.setenv("LC_TIME", "en_GB.UTF-8")
+    monkeypatch.setenv("SOT_VCENTER_PASSWORD", "hunter2")
+    monkeypatch.setenv("HOME", "/home/someone")
+
+    assert _minimal_child_env() == {
+        "PATH": "/opt/test/bin:/usr/bin",
+        "LANG": "en_US.UTF-8",
+        "LC_ALL": "C",
+        "LC_TIME": "en_GB.UTF-8",
+    }
+
+
+@pytest.mark.parametrize("path_value", [None, ""])
+def test_minimal_child_env_default_path_when_unset_or_empty(
+    monkeypatch: pytest.MonkeyPatch, path_value: str | None
+) -> None:
+    if path_value is None:
+        monkeypatch.delenv("PATH", raising=False)
+    else:
+        monkeypatch.setenv("PATH", path_value)
+
+    assert (
+        _minimal_child_env()["PATH"]
+        == "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    )
