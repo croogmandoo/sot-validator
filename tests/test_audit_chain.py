@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import sqlite3
 import threading
 
@@ -21,7 +22,28 @@ from sot_validator.curation import (
 from sot_validator.models import NetworkDevice, Site
 from sot_validator.workbench.server import WorkbenchState
 
-STORE_PY = Path(__file__).resolve().parents[1] / "src" / "sot_validator" / "curation" / "store.py"
+CURATION_PKG = Path(__file__).resolve().parents[1] / "src" / "sot_validator" / "curation"
+
+_MIGRATION_BACKFILL_MARKERS = ("SET prev_hash = ?, entry_hash = ?", "entry_hash IS NULL")
+
+
+def _audit_row_write_violations(package_dir: Path) -> list[str]:
+    """Return every audit-row UPDATE/DELETE under ``package_dir`` except the one migration backfill."""
+    matches: list[tuple[str, int, str]] = []
+    for path in sorted(package_dir.rglob("*.py")):
+        rel = path.relative_to(package_dir).as_posix()
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if "UPDATE audit_log" in line or "DELETE FROM audit_log" in line:
+                matches.append((rel, lineno, line.strip()))
+    if not matches:
+        return [
+            "migration backfill line (UPDATE audit_log SET prev_hash = ?, entry_hash = ? "
+            "... entry_hash IS NULL) not found"
+        ]
+    if len(matches) == 1 and all(marker in matches[0][2] for marker in _MIGRATION_BACKFILL_MARKERS):
+        return []
+    return [f"{rel}:{lineno}: {line}" for rel, lineno, line in matches]
+
 
 LEGACY_AUDIT_DDL = """
 CREATE TABLE audit_log (
@@ -531,14 +553,34 @@ class TestNoBackfillRewrite:
         assert len(store.list_audit_log(site_id="site-9")) == 2
 
     def test_only_migration_updates_audit_rows(self) -> None:
-        lines = [
-            line
-            for line in STORE_PY.read_text(encoding="utf-8").splitlines()
-            if "UPDATE audit_log" in line or "DELETE FROM audit_log" in line
-        ]
-        assert len(lines) == 1
-        assert "SET prev_hash = ?, entry_hash = ?" in lines[0]
-        assert "entry_hash IS NULL" in lines[0]
+        violations = _audit_row_write_violations(CURATION_PKG)
+        assert violations == [], "\n".join(violations)
+
+    def test_guard_reports_update_in_sibling_private_module(self, tmp_path: Path) -> None:
+        pkg = tmp_path / "curation"
+        shutil.copytree(CURATION_PKG, pkg, ignore=shutil.ignore_patterns("__pycache__"))
+        crud = pkg / "_store_crud.py"
+        text = crud.read_text(encoding="utf-8")
+        if not text.endswith("\n"):
+            text += "\n"
+        crud.write_text(text + "# UPDATE audit_log SET reason = 'x'\n", encoding="utf-8")
+        lineno = len(crud.read_text(encoding="utf-8").splitlines())
+        violations = _audit_row_write_violations(pkg)
+        assert violations
+        assert any(v.startswith(f"_store_crud.py:{lineno}: ") for v in violations)
+
+    def test_guard_allows_migration_line_in_other_module(self, tmp_path: Path) -> None:
+        pkg = tmp_path / "curation"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("", encoding="utf-8")
+        (pkg / "store.py").write_text("SCHEMA = 'audit_log'\n", encoding="utf-8")
+        (pkg / "_store_io.py").write_text(
+            "SQL = (\n"
+            '    "UPDATE audit_log SET prev_hash = ?, entry_hash = ? WHERE seq = ? AND entry_hash IS NULL",\n'
+            ")\n",
+            encoding="utf-8",
+        )
+        assert _audit_row_write_violations(pkg) == []
 
 
 class TestMarkerAndFieldValidation:
