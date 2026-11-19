@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden &lt;Workbench&gt; &amp; {braces} &quot;quoted&quot; &#x27;single&#x27; &lt;/script&gt; — SF HQ &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --panel-alt: #334155;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --border: #475569;
+  --active: #22c55e;
+  --stale: #ef4444;
+  --unreachable: #f59e0b;
+  --insufficient: #64748b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+header {
+  padding: 1rem 1.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header h1 { margin: 0; font-size: 1.35rem; }
+.container { max-width: 1440px; margin: 0 auto; padding: 1.25rem; }
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+.kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+.kpi-card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
+.kpi-card .value { font-size: 1.55rem; font-weight: 700; margin-top: 0.25rem; }
+.kpi-card .sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+.filter-bar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.filter-bar input, .filter-bar select, form input, form select, form textarea,
+.import-row input, .import-row select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.tab-btn {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: #0f172a;
+  border-color: var(--accent);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+th { background: var(--panel-alt); font-weight: 600; }
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-active { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.badge-stale { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.badge-unreachable { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.badge-insufficient { background: rgba(100, 116, 139, 0.25); color: #cbd5e1; }
+.badge-info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.btn {
+  background: var(--accent);
+  color: #0f172a;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.btn-danger { background: var(--stale); color: #fff; }
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.card h3 { margin-top: 0; font-size: 1.05rem; }
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.65rem;
+}
+.form-row label { font-size: 0.82rem; color: var(--muted); }
+.device-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+}
+.device-card-header { margin-bottom: 0.6rem; font-size: 0.92rem; }
+.port-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.port-chip {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 72px;
+}
+.port-up { background: rgba(34, 197, 94, 0.15); border-color: #22c55e; }
+.port-down { background: rgba(100, 116, 139, 0.15); }
+.port-name { font-weight: 700; }
+.port-meta { font-size: 0.68rem; color: var(--muted); }
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 520px;
+}
+#status-banner {
+  display: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+.topology-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+#topology-svg {
+  display: block;
+  max-width: none;
+}
+.topo-node { cursor: pointer; }
+.topo-node-box {
+  fill: var(--panel-alt);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.topo-node text { fill: var(--text); font-size: 12px; }
+.topo-edge { stroke: var(--insufficient); stroke-width: 1.5; }
+.topo-node.topo-selected .topo-node-box,
+.topo-node:focus .topo-node-box {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.topo-node.topo-selected { outline: 2px solid var(--accent); }
+.topology-caption {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+#topology-mermaid {
+  margin-top: 0;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.faceplate-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  max-width: 100%;
+}
+.faceplate-heading {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+}
+.faceplate-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.legend-swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+  margin-right: 0.3rem;
+  vertical-align: -0.15rem;
+  padding: 0;
+}
+#switch-faceplate {
+  display: grid;
+  grid-auto-flow: row;
+  grid-template-rows: repeat(2, auto);
+  justify-content: start;
+  gap: 0.35rem;
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+}
+.faceplate-port {
+  color: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.35);
+  border-radius: 4px;
+  min-width: 5rem;
+  min-height: 2.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.4rem;
+  white-space: nowrap;
+}
+.faceplate-port.faceplate-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.faceplate-up { background: #10b981; color: #0f172a; }
+.faceplate-down { background: #64748b; }
+.faceplate-uplink { background: #4f46e5; }
+.faceplate-stale { background: #e11d48; }
+.faceplate-poe-badge { background: #f59e0b; color: #0f172a; border-radius: 999px; padding: 0 0.35rem; font-size: 0.68rem; }
+.legend-swatch.faceplate-poe-badge { padding: 0; }
+.import-controls { margin-bottom: 1rem; }
+.import-help { margin: 0 0 0.75rem; font-size: 0.85rem; color: var(--muted); }
+.import-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.import-row input, .import-row select { max-width: 100%; }
+.import-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.import-summary { margin-top: 0.75rem; font-size: 0.88rem; }
+.import-messages { margin-top: 0.5rem; font-size: 0.88rem; color: #fca5a5; }
+.import-messages-neutral { color: var(--muted); }
+.import-messages ul { margin: 0.25rem 0 0; padding-left: 1.25rem; }
+.import-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+#import-preview-table { min-width: 760px; }
+#import-preview-table td { overflow-wrap: break-word; }
+
+.quality-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.quality-filters select { max-width: 100%; }
+.quality-empty { margin: 0.5rem 0 0; color: var(--muted); }
+.quality-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+#quality-table { min-width: 560px; }
+#quality-table td { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Golden &lt;Workbench&gt; &amp; {braces} &quot;quoted&quot; &#x27;single&#x27; &lt;/script&gt;</h1>
+    <small>Site: <strong id="site-header-name">SF HQ &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong> (<code>site-001</code>) — Address: 100 Market St, San Francisco, CA</small>
+  </div>
+  <div>
+    <button type="button" class="btn btn-sm" onclick="refreshFromApi()">Refresh State</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="status-banner"></div>
+
+  <!-- 1. Overview KPI Cards & Filter Bar -->
+  <section id="kpi-overview" class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Network Devices</div>
+      <div class="value" id="kpi-total-devices">2</div>
+      <div class="sub">Routers, Switches &amp; Hosts</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Switch / Router Ports</div>
+      <div class="value" id="kpi-total-ports">3</div>
+      <div class="sub"><span id="kpi-active-ports">2</span> UP / <span id="kpi-poe-ports">2</span> PoE</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">VLANs &amp; /24 Subnets</div>
+      <div class="value"><span id="kpi-total-vlans">2</span> / <span id="kpi-total-subnets">2</span></div>
+      <div class="sub">Segmented Networks</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Equipment &amp; IPs</div>
+      <div class="value"><span id="kpi-total-equipment">3</span> / <span id="kpi-total-ips">3</span></div>
+      <div class="sub">Servers, VMs, UPS, SAN, IPs</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Validation Breakdown</div>
+      <div class="value" id="kpi-confirmed-active">4 Active</div>
+      <div class="sub">
+        <span id="kpi-stale">1</span> Stale ·
+        <span id="kpi-unreachable">0</span> Review ·
+        <span id="kpi-insufficient">3</span> Insuff
+      </div>
+    </div>
+  </section>
+
+  <section id="filter-bar" class="filter-bar">
+    <input type="search" id="inventory-search" placeholder="Search hostname, ID, IP, MAC, notes..." oninput="applyInventoryFilters()">
+    <select id="filter-vlan" onchange="applyInventoryFilters()">
+      <option value="">All VLANs</option><option value="10">VLAN 10 (Servers &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;)</option><option value="20">VLAN 20 (Uplinks)</option>
+    </select>
+    <select id="filter-subnet" onchange="applyInventoryFilters()">
+      <option value="">All Subnets</option><option value="sub-10">10.1.10.0/24 (sub-10)</option><option value="sub-20">10.1.20.0/24 (sub-20)</option>
+    </select>
+    <select id="filter-classification" onchange="applyInventoryFilters()">
+      <option value="">All Classifications</option><option value="Confirmed Active">Confirmed Active</option><option value="Stale / Likely Unused">Stale / Likely Unused</option><option value="Unreachable / Needs Manual Review">Unreachable / Needs Manual Review</option><option value="Insufficient Data">Insufficient Data</option>
+    </select>
+  </section>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs">
+    <button type="button" class="tab-btn active" data-tab="tab-inventory" onclick="switchTab('tab-inventory')">Modifiable Inventory</button>
+    <button type="button" class="tab-btn" data-tab="tab-devices-ports" onclick="switchTab('tab-devices-ports')">Routers, Switches &amp; Port Manager</button>
+    <button type="button" class="tab-btn" data-tab="tab-topology" onclick="switchTab('tab-topology')">Topology Map</button>
+    <button type="button" class="tab-btn" data-tab="tab-vlans" onclick="switchTab('tab-vlans')">VLAN &amp; Subnet Manager</button>
+    <button type="button" class="tab-btn" data-tab="tab-audit-log" onclick="switchTab('tab-audit-log')">Audit Log</button>
+    <button type="button" class="tab-btn" data-tab="tab-import" onclick="switchTab('tab-import')">Bulk Import</button>
+    <button type="button" class="tab-btn" data-tab="tab-quality" onclick="switchTab('tab-quality')">Data Quality</button>
+  </nav>
+
+  <!-- 2. Modifiable Inventory Table Tab -->
+  <section id="tab-inventory" class="tab-panel active">
+    <table id="inventory-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>ID</th>
+          <th>Name / Hostname</th>
+          <th>Category / Role</th>
+          <th>Room</th>
+          <th>VLAN / Subnet</th>
+          <th>IPs / Ports</th>
+          <th>Operator Notes</th>
+          <th>Classification</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="inventory-tbody">
+        <tr data-target-type="NetworkDevice" data-target-id="dev-core-01" data-vlan="" data-classification="Confirmed Active"><td><code>NetworkDevice</code></td><td><code>dev-core-01</code></td><td><strong>sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong></td><td>switch (Extreme Networks Summit X440-G2-24p)</td><td>IDF-2</td><td></td><td>10.1.1.2 (3 ports)</td><td>core notes</td><td><span class="badge badge-active">Confirmed Active</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('NetworkDevice', 'dev-core-01')">Edit</button></td></tr><tr data-target-type="NetworkDevice" data-target-id="dev-acc-02" data-vlan="" data-classification="Confirmed Active"><td><code>NetworkDevice</code></td><td><code>dev-acc-02</code></td><td><strong>sw-access-02</strong></td><td>switch (Extreme Networks VSP 7400-48Y)</td><td></td><td></td><td>10.1.10.50 (0 ports)</td><td></td><td><span class="badge badge-active">Confirmed Active</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('NetworkDevice', 'dev-acc-02')">Edit</button></td></tr><tr data-target-type="Equipment" data-target-id="eq-win-01" data-vlan="10" data-classification="Confirmed Active"><td><code>Equipment</code></td><td><code>eq-win-01</code></td><td><strong>win-app-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong></td><td>vm</td><td>MDF-1</td><td>10</td><td>10.1.10.50 [dev-core-01:1:1]</td><td>patched &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</td><td><span class="badge badge-active">Confirmed Active</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('Equipment', 'eq-win-01')">Edit</button></td></tr><tr data-target-type="Equipment" data-target-id="eq-old-01" data-vlan="" data-classification="Stale / Likely Unused"><td><code>Equipment</code></td><td><code>eq-old-01</code></td><td><strong>old-printer</strong></td><td>other</td><td></td><td></td><td> [dev-core-01:1:2]</td><td></td><td><span class="badge badge-stale">Stale / Likely Unused</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('Equipment', 'eq-old-01')">Edit</button></td></tr><tr data-target-type="Equipment" data-target-id="eq-mystery-01" data-vlan="" data-classification="Insufficient Data"><td><code>Equipment</code></td><td><code>eq-mystery-01</code></td><td><strong>unknown-box-99</strong></td><td>other</td><td></td><td></td><td></td><td></td><td><span class="badge badge-insufficient">Insufficient Data</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('Equipment', 'eq-mystery-01')">Edit</button></td></tr><tr data-target-type="IPAddress" data-target-id="10.1.10.50" data-subnet="sub-10" data-classification="Insufficient Data"><td><code>IPAddress</code></td><td><code>10.1.10.50</code></td><td><strong>10.1.10.50</strong></td><td>IP Assignment</td><td></td><td>sub-10</td><td>eq-win-01 00:11:22:33:44:55</td><td></td><td><span class="badge badge-insufficient">Insufficient Data</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('IPAddress', '10.1.10.50')">Edit</button></td></tr><tr data-target-type="IPAddress" data-target-id="10.1.10.50" data-subnet="sub-10" data-classification="Insufficient Data"><td><code>IPAddress</code></td><td><code>10.1.10.50</code></td><td><strong>10.1.10.50</strong></td><td>IP Assignment</td><td></td><td>sub-10</td><td>dev-acc-02 </td><td></td><td><span class="badge badge-insufficient">Insufficient Data</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('IPAddress', '10.1.10.50')">Edit</button></td></tr><tr data-target-type="IPAddress" data-target-id="10.1.30.9" data-subnet="sub-missing" data-classification="Insufficient Data"><td><code>IPAddress</code></td><td><code>10.1.30.9</code></td><td><strong>10.1.30.9</strong></td><td>IP Assignment</td><td></td><td>sub-missing</td><td> </td><td></td><td><span class="badge badge-insufficient">Insufficient Data</span></td><td><button type="button" class="btn btn-sm" onclick="openEditModal('IPAddress', '10.1.30.9')">Edit</button></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. Routers, Switches & Port Manager Tab -->
+  <section id="tab-devices-ports" class="tab-panel">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Add Network Device (Template or Custom)</h3>
+        <form id="create-device-form" onsubmit="submitCreateDevice(event)">
+          <div class="form-row">
+            <label for="dev-hostname">Hostname *</label>
+            <input type="text" id="dev-hostname" name="hostname" required placeholder="e.g. sw-idf2-01">
+          </div>
+          <div class="form-row">
+            <label for="dev-device-id">Device ID (optional, auto-generated from hostname)</label>
+            <input type="text" id="dev-device-id" name="device_id" placeholder="e.g. dev-sw-idf2-01">
+          </div>
+          <div class="form-row">
+            <label for="dev-template-id">Hardware / Virtual Template</label>
+            <select id="dev-template-id" name="template_id">
+              <option value="">-- Custom Device (No Template) --</option><option value="extreme-exos-48p">Extreme Networks Summit X460-G2-48p (switch, 48 ports) [extreme-exos-48p]</option><option value="extreme-exos-24p">Extreme Networks Summit X440-G2-24p (switch, 24 ports) [extreme-exos-24p]</option><option value="extreme-voss-core">Extreme Networks VSP 7400-48Y (l3_switch, 48 ports) [extreme-voss-core]</option><option value="unifi-multi-vlan-router">Ubiquiti UniFi Gateway Enterprise (router, 8 ports) [unifi-multi-vlan-router]</option><option value="proxmox-ve-host">Proxmox Proxmox VE Host (hypervisor, 4 ports) [proxmox-ve-host]</option><option value="apc-smart-ups">APC Smart-UPS SMT1500RM2U (ups, 1 ports) [apc-smart-ups]</option><option value="generic-smb-nas">Synology RackStation NAS (nas, 2 ports) [generic-smb-nas]</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="dev-mgmt-ip">Management IP</label>
+            <input type="text" id="dev-mgmt-ip" name="management_ip" placeholder="e.g. 10.1.1.10">
+          </div>
+          <div class="form-row">
+            <label for="dev-role">Role Override</label>
+            <select id="dev-role" name="role">
+              <option value="">-- Use Template Default --</option>
+              <option value="router">router</option><option value="switch">switch</option><option value="l3_switch">l3_switch</option><option value="firewall">firewall</option><option value="hypervisor">hypervisor</option><option value="ups">ups</option><option value="nas">nas</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="dev-port-count">Port Count Override</label>
+            <input type="number" id="dev-port-count" name="port_count" min="0" max="256" placeholder="Default from template">
+          </div>
+          <div class="form-row">
+            <label for="dev-default-vlan">Default VLAN ID</label>
+            <input type="text" id="dev-default-vlan" name="default_vlan_id" placeholder="e.g. 10">
+          </div>
+          <div class="form-row">
+            <label for="dev-reason">Audit Reason</label>
+            <input type="text" id="dev-reason" name="reason" placeholder="Provisioned new closet switch">
+          </div>
+          <button type="submit" class="btn">Create Device</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Switch / Router Port Manager (Single or Range)</h3>
+        <form id="port-manager-form" onsubmit="submitPortManager(event)">
+          <div class="form-row">
+            <label for="pm-device-id">Target Network Device *</label>
+            <select id="pm-device-id" name="device_id" required onchange="renderSwitchFaceplate()">
+              <option value="dev-core-01">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt; (dev-core-01)</option><option value="dev-acc-02">sw-access-02 (dev-acc-02)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="pm-port-name">Single Port Name (e.g. <code>1:1</code>, <code>eth1</code>)</label>
+            <input type="text" id="pm-port-name" name="name" placeholder="1:1">
+          </div>
+          <div class="form-row">
+            <label for="pm-range-spec">Or Port Range Spec (e.g. <code>1:1..1:24</code>, <code>eth1..eth8</code>)</label>
+            <input type="text" id="pm-range-spec" name="range_spec" placeholder="1:1..1:24">
+          </div>
+          <div class="form-row">
+            <label for="pm-admin-status">Admin Status</label>
+            <select id="pm-admin-status" name="admin_status">
+              <option value="up">up</option>
+              <option value="down">down</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="pm-oper-status">Operational Link Status</label>
+            <select id="pm-oper-status" name="oper_status">
+              <option value="up">up</option>
+              <option value="down">down</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="pm-poe-status">PoE Status</label>
+            <input type="text" id="pm-poe-status" name="poe_status" placeholder="delivering / auto / off">
+          </div>
+          <div class="form-row">
+            <label for="pm-vlan-id">Assigned VLAN ID</label>
+            <input type="text" id="pm-vlan-id" name="vlan_id" placeholder="e.g. 20">
+          </div>
+          <div class="form-row">
+            <label for="pm-connected-mac">Connected Host MAC Address</label>
+            <input type="text" id="pm-connected-mac" name="connected_mac" placeholder="aa:bb:cc:dd:ee:ff">
+          </div>
+          <div class="form-row">
+            <label for="pm-connected-device">Connected Equipment / Device ID</label>
+            <input type="text" id="pm-connected-device" name="connected_device_id" placeholder="eq-srv-01">
+          </div>
+          <div class="form-row">
+            <label for="pm-reason">Audit Reason</label>
+            <input type="text" id="pm-reason" name="reason" placeholder="Patched access ports to VLAN 20">
+          </div>
+          <button type="submit" class="btn">Provision / Update Ports</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="faceplate-panel"><p class="faceplate-heading">Front panel <strong id="faceplate-hostname">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong></p><p class="faceplate-legend"><span class="legend-item"><span class="legend-swatch faceplate-up" aria-hidden="true"></span> Up</span><span class="legend-item"><span class="legend-swatch faceplate-down" aria-hidden="true"></span> Down</span><span class="legend-item"><span class="legend-swatch faceplate-uplink" aria-hidden="true"></span> Uplink</span><span class="legend-item"><span class="legend-swatch faceplate-stale" aria-hidden="true"></span> Stale</span><span class="legend-item"><span class="legend-swatch faceplate-poe-badge" aria-hidden="true"></span> PoE</span></p><div id="switch-faceplate" data-device-id="dev-core-01" data-rows="2" data-faceplate-columns="2" data-template-ports="24" style="grid-template-columns: repeat(2, minmax(5rem, max-content));"><button type="button" class="faceplate-port faceplate-up" data-port-id="dev-core-01:1:1" data-port-name="1:1" title="1:1, Up, PoE delivering" aria-label="1:1, Up, PoE delivering">1:1<span class="faceplate-poe-badge">delivering</span></button><button type="button" class="faceplate-port faceplate-stale" data-port-id="dev-core-01:1:2" data-port-name="1:2" title="1:2, Stale, PoE auto" aria-label="1:2, Stale, PoE auto">1:2<span class="faceplate-poe-badge">auto</span></button><button type="button" class="faceplate-port faceplate-uplink" data-port-id="dev-core-01:1:24" data-port-name="uplink-1:24" title="uplink-1:24, Uplink" aria-label="uplink-1:24, Uplink">uplink-1:24</button></div></div>
+
+    <div id="device-port-grids">
+      <div class="device-card" data-device-id="dev-core-01"><div class="device-card-header"><strong>sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong> <code>(dev-core-01)</code> — Extreme Networks Summit X440-G2-24p [switch] IP: <code>10.1.1.2</code></div><div class="port-grid"><div class="port-chip port-up" title="Port 1:1 | Admin: up | Oper: up | VLAN: 10 | MAC: 00:11:22:33:44:55 | Connected: eq-win-01"><span class="port-name">1:1</span><span class="port-meta">V10 ⚡delivering MAC:00:11:22:33:44:55</span></div><div class="port-chip port-down" title="Port 1:2 | Admin: up | Oper: down | VLAN: 10 | MAC:  | Connected: "><span class="port-name">1:2</span><span class="port-meta">V10 ⚡auto </span></div><div class="port-chip port-up" title="Port uplink-1:24 | Admin: up | Oper: up | VLAN: 20 | MAC:  | Connected: dev-acc-02"><span class="port-name">uplink-1:24</span><span class="port-meta">V20  </span></div></div></div><div class="device-card" data-device-id="dev-acc-02"><div class="device-card-header"><strong>sw-access-02</strong> <code>(dev-acc-02)</code> — Extreme Networks VSP 7400-48Y [switch] IP: <code>10.1.10.50</code></div><div class="port-grid"><em>No ports provisioned</em></div></div>
+    </div>
+  </section>
+
+  <section id="tab-topology" class="tab-panel">
+    <div id="topology-scroll" class="topology-scroll">
+      <svg id="topology-svg" viewBox="0 0 1840 220" width="1840" height="220" style="width:1840px;height:220px"><line class="topo-edge" data-relation="uplink_to" x1="224" y1="64" x2="472" y2="64" /><line class="topo-edge" data-relation="uplink_to" x1="224" y1="64" x2="472" y2="120" /><line class="topo-edge" data-relation="uplink_to" x1="572" y1="92" x2="572" y2="92" /><line class="topo-edge" data-relation="routes_vlan" x1="896" y1="64" x2="920" y2="64" /><line class="topo-edge" data-relation="routes_vlan" x1="896" y1="120" x2="920" y2="120" /><line class="topo-edge" data-relation="connected_port" x1="672" y1="64" x2="1144" y2="64" /><line class="topo-edge" data-relation="connected_port" x1="1344" y1="64" x2="1368" y2="64" /><line class="topo-edge" data-relation="connected_port" x1="672" y1="64" x2="1144" y2="120" /><line class="topo-edge" data-relation="connected_port" x1="1344" y1="120" x2="1368" y2="120" /><line class="topo-edge" data-relation="connected_port" x1="672" y1="64" x2="1144" y2="176" /><line class="topo-edge" data-relation="connected_port" x1="1144" y1="176" x2="672" y2="120" /><line class="topo-edge" data-relation="member_of_vlan" x1="896" y1="64" x2="1368" y2="64" /><line class="topo-edge" data-relation="member_of_vlan" x1="896" y1="64" x2="1368" y2="120" /><line class="topo-edge" data-relation="member_of_vlan" x1="696" y1="64" x2="672" y2="64" /><line class="topo-edge" data-relation="member_of_vlan" x1="696" y1="120" x2="672" y2="64" /><line class="topo-edge" data-relation="member_of_vlan" x1="696" y1="64" x2="672" y2="120" /><line class="topo-edge" data-relation="assigned_ip" x1="1568" y1="64" x2="1592" y2="120" /><line class="topo-edge" data-relation="assigned_ip" x1="672" y1="120" x2="1592" y2="120" /><g class="topo-node" data-node-id="site-001" data-node-type="site" role="button" tabindex="0" aria-label="site SF HQ &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;" transform="translate(24,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">SF HQ &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</text></g><g class="topo-node" data-node-id="dev-core-01" data-node-type="switch" role="button" tabindex="0" aria-label="switch sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;" transform="translate(472,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</text></g><g class="topo-node" data-node-id="dev-acc-02" data-node-type="switch" role="button" tabindex="0" aria-label="switch sw-access-02" transform="translate(472,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">sw-access-02</text></g><g class="topo-node" data-node-id="10" data-node-type="vlan" role="button" tabindex="0" aria-label="vlan Servers &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;" transform="translate(696,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">Servers &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</text></g><g class="topo-node" data-node-id="20" data-node-type="vlan" role="button" tabindex="0" aria-label="vlan Uplinks" transform="translate(696,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">Uplinks</text></g><g class="topo-node" data-node-id="sub-10" data-node-type="subnet" role="button" tabindex="0" aria-label="subnet Servers" transform="translate(920,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">Servers</text></g><g class="topo-node" data-node-id="sub-20" data-node-type="subnet" role="button" tabindex="0" aria-label="subnet Uplinks" transform="translate(920,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">Uplinks</text></g><g class="topo-node" data-node-id="dev-core-01:1:1" data-node-type="port" role="button" tabindex="0" aria-label="port sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:1:1" transform="translate(1144,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:1:1</text></g><g class="topo-node" data-node-id="dev-core-01:1:2" data-node-type="port" role="button" tabindex="0" aria-label="port sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:1:2" transform="translate(1144,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:1:2</text></g><g class="topo-node" data-node-id="dev-core-01:1:24" data-node-type="port" role="button" tabindex="0" aria-label="port sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:uplink-1:24" transform="translate(1144,148)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">sw-core-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;:uplink-1:24</text></g><g class="topo-node" data-node-id="eq-win-01" data-node-type="equipment" role="button" tabindex="0" aria-label="equipment win-app-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;" transform="translate(1368,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">win-app-01&lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</text></g><g class="topo-node" data-node-id="eq-old-01" data-node-type="equipment" role="button" tabindex="0" aria-label="equipment old-printer" transform="translate(1368,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">old-printer</text></g><g class="topo-node" data-node-id="eq-mystery-01" data-node-type="equipment" role="button" tabindex="0" aria-label="equipment unknown-box-99" transform="translate(1368,148)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">unknown-box-99</text></g><g class="topo-node" data-node-id="10.1.10.50" data-node-type="ip" role="button" tabindex="0" aria-label="ip 10.1.10.50" transform="translate(1592,36)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">10.1.10.50</text></g><g class="topo-node" data-node-id="ip:10.1.10.50" data-node-type="ip" role="button" tabindex="0" aria-label="ip 10.1.10.50" transform="translate(1592,92)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">10.1.10.50</text></g><g class="topo-node" data-node-id="10.1.30.9" data-node-type="ip" role="button" tabindex="0" aria-label="ip 10.1.30.9" transform="translate(1592,148)"><rect class="topo-node-box" width="200" height="56" rx="6" ry="6"></rect><text x="12" y="28" dominant-baseline="middle">10.1.30.9</text></g></svg>
+    </div>
+    <p class="topology-caption">Mermaid source</p>
+    <pre id="topology-mermaid">flowchart LR
+    site_001[&quot;SF HQ &lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt;&quot;]
+    dev_core_01[&quot;sw-core-01&lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt; - 10.1.1.2&quot;]
+    dev_acc_02[&quot;sw-access-02 - 10.1.10.50&quot;]
+    n_10[&quot;Servers &lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt;&quot;]
+    n_20[&quot;Uplinks&quot;]
+    sub_10[&quot;Servers - 10.1.10.1&quot;]
+    sub_20[&quot;Uplinks - 10.1.20.1&quot;]
+    dev_core_01_1_1[&quot;sw-core-01&lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt;:1:1&quot;]
+    dev_core_01_1_2[&quot;sw-core-01&lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt;:1:2&quot;]
+    dev_core_01_1_24[&quot;sw-core-01&lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt;:uplink-1:24&quot;]
+    eq_win_01[&quot;win-app-01&lt;b&gt;&amp;&#x27;&#x27;{x}&lt;/script&gt; - 10.1.10.50&quot;]
+    eq_old_01[&quot;old-printer&quot;]
+    eq_mystery_01[&quot;unknown-box-99&quot;]
+    n_10_1_10_50[&quot;10.1.10.50&quot;]
+    ip_10_1_10_50[&quot;10.1.10.50&quot;]
+    n_10_1_30_9[&quot;10.1.30.9&quot;]
+    site_001 --&gt;|uplink_to| dev_core_01
+    site_001 --&gt;|uplink_to| dev_acc_02
+    dev_core_01 --&gt;|uplink_to uplink-1:24 VLAN 20| dev_acc_02
+    n_10 --&gt;|routes_vlan VLAN 10| sub_10
+    n_20 --&gt;|routes_vlan VLAN 20| sub_20
+    dev_core_01 --&gt;|connected_port 1:1 VLAN 10 PoE:delivering| dev_core_01_1_1
+    dev_core_01_1_1 --&gt;|connected_port 1:1 VLAN 10 PoE:delivering| eq_win_01
+    dev_core_01 --&gt;|connected_port 1:2 VLAN 10 PoE:auto| dev_core_01_1_2
+    dev_core_01_1_2 --&gt;|connected_port 1:2 VLAN 10 PoE:auto| eq_old_01
+    dev_core_01 --&gt;|connected_port uplink-1:24 VLAN 20| dev_core_01_1_24
+    dev_core_01_1_24 --&gt;|connected_port uplink-1:24 VLAN 20| dev_acc_02
+    n_10 --&gt;|member_of_vlan VLAN 10| eq_win_01
+    n_10 --&gt;|member_of_vlan VLAN 10| eq_old_01
+    n_10 --&gt;|member_of_vlan VLAN 10| dev_core_01
+    n_20 --&gt;|member_of_vlan VLAN 20| dev_core_01
+    n_10 --&gt;|member_of_vlan VLAN 10| dev_acc_02
+    eq_win_01 --&gt;|assigned_ip| ip_10_1_10_50
+    dev_acc_02 --&gt;|assigned_ip| ip_10_1_10_50</pre>
+  </section>
+
+  <!-- 4. VLAN & Subnet Manager Tab -->
+  <section id="tab-vlans" class="tab-panel">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Add / Update VLAN &amp; /24 Subnet</h3>
+        <form id="vlan-form" onsubmit="submitVlanForm(event)">
+          <div class="form-row">
+            <label for="vlan-id-input">VLAN ID *</label>
+            <input type="text" id="vlan-id-input" name="vlan_id" required placeholder="e.g. 30">
+          </div>
+          <div class="form-row">
+            <label for="vlan-name-input">VLAN Name</label>
+            <input type="text" id="vlan-name-input" name="name" placeholder="e.g. Voice / VoIP">
+          </div>
+          <div class="form-row">
+            <label for="vlan-subnet-id-input">Subnet ID (optional)</label>
+            <input type="text" id="vlan-subnet-id-input" name="subnet_id" placeholder="e.g. sub-vlan-30">
+          </div>
+          <div class="form-row">
+            <label for="vlan-cidr-input">IPv4 /24 CIDR</label>
+            <input type="text" id="vlan-cidr-input" name="cidr" placeholder="e.g. 10.1.30.0/24">
+          </div>
+          <div class="form-row">
+            <label for="vlan-gateway-input">Default Gateway IP</label>
+            <input type="text" id="vlan-gateway-input" name="gateway" placeholder="e.g. 10.1.30.1">
+          </div>
+          <div class="form-row">
+            <label for="vlan-reason-input">Audit Reason</label>
+            <input type="text" id="vlan-reason-input" name="reason" placeholder="Added VLAN 30 subnet">
+          </div>
+          <button type="submit" class="btn">Save VLAN &amp; Subnet</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Site VLAN &amp; /24 Subnet Summary</h3>
+        <table id="vlan-summary-table">
+          <thead>
+            <tr>
+              <th>VLAN ID</th>
+              <th>Name</th>
+              <th>Subnet ID</th>
+              <th>CIDR</th>
+              <th>Gateway</th>
+              <th>IPs</th>
+              <th>Switch Ports</th>
+              <th>Equipment</th>
+            </tr>
+          </thead>
+          <tbody id="vlan-summary-tbody">
+            <tr><td><code>10</code></td><td><strong>Servers &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</strong></td><td><code>sub-10</code></td><td><code>10.1.10.0/24</code></td><td><code>10.1.10.1</code></td><td>2</td><td>2</td><td>2</td></tr><tr><td><code>20</code></td><td><strong>Uplinks</strong></td><td><code>sub-20</code></td><td><code>10.1.20.0/24</code></td><td><code>10.1.20.1</code></td><td>0</td><td>1</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Audit Log Tab -->
+  <section id="tab-audit-log" class="tab-panel">
+    <table id="audit-log-table">
+      <thead>
+        <tr>
+          <th>Timestamp (UTC)</th>
+          <th>Actor</th>
+          <th>Action</th>
+          <th>Target</th>
+          <th>Changes</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody id="audit-log-tbody">
+        <tr><td><code><TIMESTAMP></code></td><td>golden</td><td><span class="badge badge-info">UPSERT_PATCH</span></td><td><code>Equipment:eq-win-01</code></td><td><code>{&quot;site_id&quot;: &quot;site-001&quot;, &quot;vlan_id&quot;: &quot;10&quot;, &quot;room&quot;: &quot;MDF-1&quot;, &quot;notes&quot;: &quot;patched &lt;b&gt;&amp;\&quot;&#x27;{x}&lt;/script&gt;&quot;, &quot;custom_attributes&quot;: {&quot;vlan_id&quot;: &quot;10&quot;, &quot;room&quot;: &quot;MDF-1&quot;}}</code></td><td>golden reason &lt;b&gt;&amp;&quot;&#x27;{x}&lt;/script&gt;</td></tr><tr><td><code><TIMESTAMP></code></td><td>golden</td><td><span class="badge badge-info">UPSERT_PATCH</span></td><td><code>NetworkDevice:dev-core-01</code></td><td><code>{&quot;site_id&quot;: &quot;site-001&quot;, &quot;room&quot;: &quot;IDF-2&quot;, &quot;notes&quot;: &quot;core notes&quot;}</code></td><td>device note</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6. Bulk CSV Import Tab -->
+  <section id="tab-import" class="tab-panel">
+    <div class="card import-controls">
+      <h3>Bulk CSV Curation Import</h3>
+      <p class="import-help">Columns: <code>record_type, record_id, field, new_value, reason</code>. Preview first; Apply writes only the previewed changes.</p>
+      <div class="import-row">
+        <div class="form-row">
+          <label for="import-file">CSV file</label>
+          <input type="file" id="import-file" accept=".csv,text/csv" onchange="invalidateImportPreview()">
+        </div>
+        <div class="form-row">
+          <label for="import-as-of">Conflict if changed after (optional)</label>
+          <input type="datetime-local" id="import-as-of" onchange="invalidateImportPreview()" oninput="invalidateImportPreview()">
+        </div>
+        <div class="form-row">
+          <label for="import-status-filter">Show status</label>
+          <select id="import-status-filter" onchange="applyImportStatusFilter()">
+            <option value="">all</option>
+            <option value="change">change</option>
+            <option value="no_op">no_op</option>
+            <option value="conflict">conflict</option>
+            <option value="invalid">invalid</option>
+          </select>
+        </div>
+      </div>
+      <div class="import-actions">
+        <button type="button" class="btn" id="import-preview-btn" onclick="previewImport()">Preview</button>
+        <button type="button" class="btn" id="import-apply-btn" onclick="applyImport()" disabled>Apply</button>
+      </div>
+      <div id="import-summary" class="import-summary" aria-live="polite"></div>
+      <div id="import-messages" class="import-messages" role="status"></div>
+    </div>
+    <div class="import-scroll">
+      <table id="import-preview-table">
+        <thead>
+          <tr>
+            <th>Row</th>
+            <th>Record Type</th>
+            <th>Record ID</th>
+            <th>Field</th>
+            <th>Old Value</th>
+            <th>New Value</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody id="import-preview-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7. Data Quality Tab -->
+  <section id="tab-quality" class="tab-panel">
+    <div class="card quality-controls">
+      <h3>Data Quality Findings</h3>
+      <div class="quality-filters">
+        <div class="form-row">
+          <label for="quality-rule-filter">Rule</label>
+          <select id="quality-rule-filter" onchange="applyQualityFilters()">
+            <option value="">All rules</option><option value="duplicate_ip">duplicate_ip</option><option value="duplicate_mac">duplicate_mac</option><option value="ip_outside_site_block">ip_outside_site_block</option><option value="ip_outside_active_subnet">ip_outside_active_subnet</option><option value="orphan_reference">orphan_reference</option><option value="hostname_mismatch">hostname_mismatch</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="quality-severity-filter">Severity</label>
+          <select id="quality-severity-filter" onchange="applyQualityFilters()">
+            <option value="">All severities</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option>
+          </select>
+        </div>
+      </div>
+      <p id="quality-empty" class="quality-empty" role="status" hidden>No data-quality findings for this site.</p>
+    </div>
+    <div class="quality-scroll">
+      <table id="quality-table">
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Severity</th>
+            <th>Records</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody id="quality-tbody"><tr data-rule="duplicate_ip" data-severity="error"><td><code>duplicate_ip</code></td><td><span class="badge badge-stale">error</span></td><td>Equipment:eq-win-01, NetworkDevice:dev-acc-02, site:site-001</td><td>IP 10.1.10.50 is assigned to 2 records in site site-001</td></tr><tr data-rule="duplicate_mac" data-severity="warning"><td><code>duplicate_mac</code></td><td><span class="badge badge-unreachable">warning</span></td><td>ip:10.1.10.50, port:dev-core-01:1:1, site:site-001</td><td>MAC 00:11:22:33:44:55 appears on 2 records in site site-001</td></tr><tr data-rule="ip_outside_active_subnet" data-severity="warning"><td><code>ip_outside_active_subnet</code></td><td><span class="badge badge-unreachable">warning</span></td><td>ip:10.1.30.9, site:site-001</td><td>IP 10.1.30.9 is inside site block 10.1.0.0/16 but outside every known subnet</td></tr><tr data-rule="orphan_reference" data-severity="error"><td><code>orphan_reference</code></td><td><span class="badge badge-stale">error</span></td><td>ip:10.1.30.9, site:site-001, subnet:sub-missing</td><td>IP 10.1.30.9 references unknown subnet sub-missing</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- Inline Item Edit Modal -->
+<div id="item-edit-modal" class="modal-backdrop">
+  <div class="modal">
+    <h3>Edit Inventory Item</h3>
+    <form id="item-edit-form" onsubmit="submitItemPatch(event)">
+      <input type="hidden" id="edit-target-type" name="target_type">
+      <input type="hidden" id="edit-target-id" name="target_id">
+      <div class="form-row">
+        <label for="edit-name">Name / Hostname</label>
+        <input type="text" id="edit-name" name="name">
+      </div>
+      <div class="form-row">
+        <label for="edit-category-role">Category / Device Role</label>
+        <input type="text" id="edit-category-role" name="category_or_role" list="category-role-list">
+        <datalist id="category-role-list">
+          <option value="server">server</option><option value="san">san</option><option value="ups">ups</option><option value="vm">vm</option><option value="other">other</option>
+          <option value="router">router</option><option value="switch">switch</option><option value="l3_switch">l3_switch</option><option value="firewall">firewall</option><option value="hypervisor">hypervisor</option><option value="ups">ups</option><option value="nas">nas</option>
+        </datalist>
+      </div>
+      <div class="form-row">
+        <label for="edit-room">Room / Closet</label>
+        <input type="text" id="edit-room" name="room" placeholder="e.g. Server Room B">
+      </div>
+      <div class="form-row">
+        <label for="edit-vlan-id">VLAN ID</label>
+        <input type="text" id="edit-vlan-id" name="vlan_id" placeholder="e.g. 10">
+      </div>
+      <div class="form-row">
+        <label for="edit-notes">Operator Notes</label>
+        <textarea id="edit-notes" name="notes" rows="2"></textarea>
+      </div>
+      <div class="form-row">
+        <label for="edit-pinned-classification">Pin Validation Classification</label>
+        <select id="edit-pinned-classification" name="pinned_classification">
+          <option value="">-- Automatic (Unpinned) --</option><option value="Confirmed Active">Confirmed Active</option><option value="Stale / Likely Unused">Stale / Likely Unused</option><option value="Unreachable / Needs Manual Review">Unreachable / Needs Manual Review</option><option value="Insufficient Data">Insufficient Data</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="edit-reason">Audit Reason</label>
+        <input type="text" id="edit-reason" name="reason" placeholder="Verified during site walkthrough">
+      </div>
+      <div style="display:flex; gap:0.5rem; justify-content:space-between; margin-top:1rem;">
+        <button type="button" class="btn btn-danger" onclick="submitDeleteCurrentItem()">Delete Item</button>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn" style="background:var(--panel-alt);color:var(--text);" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script id="initial-workbench-state" type="application/json">{"site": {"site_id": "site-001", "name": "SF HQ <b>&\"'{x}<\/script>", "address": "100 Market St, San Francisco, CA", "contact_info": "netops@example.com", "rooms": ["MDF-1", "IDF-2"], "devices": [{"device_id": "dev-core-01", "site_id": "site-001", "hostname": "sw-core-01<b>&\"'{x}<\/script>", "management_ip": "10.1.1.2", "vendor": "Extreme Networks", "model": "Summit X440-G2-24p", "role": "switch", "last_seen": "<TIMESTAMP>", "ports": [{"port_id": "dev-core-01:1:1", "device_id": "dev-core-01", "name": "1:1", "admin_status": "up", "oper_status": "up", "poe_status": "delivering", "connected_device_id": "eq-win-01", "connected_mac": "00:11:22:33:44:55", "vlan_id": "10"}, {"port_id": "dev-core-01:1:2", "device_id": "dev-core-01", "name": "1:2", "admin_status": "up", "oper_status": "down", "poe_status": "auto", "connected_device_id": null, "connected_mac": null, "vlan_id": "10"}, {"port_id": "dev-core-01:1:24", "device_id": "dev-core-01", "name": "uplink-1:24", "admin_status": "up", "oper_status": "up", "poe_status": null, "connected_device_id": "dev-acc-02", "connected_mac": null, "vlan_id": "20"}]}, {"device_id": "dev-acc-02", "site_id": "site-001", "hostname": "sw-access-02", "management_ip": "10.1.10.50", "vendor": "Extreme Networks", "model": "VSP 7400-48Y", "role": "switch", "last_seen": "<TIMESTAMP>", "ports": []}], "vlans": [{"vlan_id": "10", "site_id": "site-001", "name": "Servers <b>&\"'{x}<\/script>", "subnet_id": "sub-10", "cidr": "10.1.10.0/24", "gateway": "10.1.10.1"}, {"vlan_id": "20", "site_id": "site-001", "name": "Uplinks", "subnet_id": "sub-20", "cidr": "10.1.20.0/24", "gateway": "10.1.20.1"}], "subnets": [{"subnet_id": "sub-10", "site_id": "site-001", "cidr": "10.1.10.0/24", "vlan_id": "10", "gateway": "10.1.10.1", "name": "Servers"}, {"subnet_id": "sub-20", "site_id": "site-001", "cidr": "10.1.20.0/24", "vlan_id": "20", "gateway": "10.1.20.1", "name": "Uplinks"}], "ip_addresses": [{"ip": "10.1.10.50", "subnet_id": "sub-10", "assigned_object_type": "Equipment", "assigned_object_id": "eq-win-01", "arp_mac": "00:11:22:33:44:55", "arp_last_seen": "<TIMESTAMP>", "arp_source_device_id": "dev-core-01", "arp_entry": null}, {"ip": "10.1.10.50", "subnet_id": "sub-10", "assigned_object_type": "NetworkDevice", "assigned_object_id": "dev-acc-02", "arp_mac": null, "arp_last_seen": null, "arp_source_device_id": null, "arp_entry": null}, {"ip": "10.1.30.9", "subnet_id": "sub-missing", "assigned_object_type": null, "assigned_object_id": null, "arp_mac": null, "arp_last_seen": null, "arp_source_device_id": null, "arp_entry": null}], "equipment": [{"equipment_id": "eq-win-01", "site_id": "site-001", "name": "win-app-01<b>&\"'{x}<\/script>", "category": "vm", "assigned_ips": ["10.1.10.50"], "connected_ports": ["dev-core-01:1:1"], "hypervisor_id": null, "power_state": "poweredOn", "last_seen": "<TIMESTAMP>"}, {"equipment_id": "eq-old-01", "site_id": "site-001", "name": "old-printer", "category": "other", "assigned_ips": [], "connected_ports": ["dev-core-01:1:2"], "hypervisor_id": null, "power_state": null, "last_seen": "<TIMESTAMP>"}, {"equipment_id": "eq-mystery-01", "site_id": "site-001", "name": "unknown-box-99", "category": "other", "assigned_ips": [], "connected_ports": [], "hypervisor_id": null, "power_state": null, "last_seen": null}]}, "results": [{"item_type": "NetworkDevice", "item_id": "dev-core-01", "site_id": "site-001", "name": "sw-core-01<b>&\"'{x}<\/script>", "classification": "Confirmed Active", "confidence": 0.7425, "signals": [{"signal_type": "ARP_RECENCY", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "IP 10.1.1.2: no ARP timestamp recorded", "source": "sot.arp", "metadata": {}}, {"signal_type": "PORT_STATE", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": null, "details": "Port dev-core-01:1:1 (dev-core-01:1:1) [admin='up', oper='up', poe='delivering'] -> ACTIVE (link UP and PoE delivering power); Port dev-core-01:1:2 (dev-core-01:1:2) [admin='up', oper='down', poe='auto'] -> INACTIVE (link down / no PoE draw); Port dev-core-01:uplink-1:24 (dev-core-01:1:24) [admin='up', oper='up', poe=None] -> ACTIVE (link UP)", "source": "sot.port_state", "metadata": {}}, {"signal_type": "LAST_SEEN_TIMESTAMP", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 432000.0, "details": "last_seen for NetworkDevice sw-core-01<b>&\"'{x}<\/script> (dev-core-01) is active: observed at <TIMESTAMP> (age 5.00d <= active threshold 7d)", "source": "sot.last_seen", "metadata": {}}], "rationale": "Confirmed Active for NetworkDevice sw-core-01<b>&\"'{x}<\/script> (dev-core-01): corroborated by PORT_STATE=ACTIVE, LAST_SEEN_TIMESTAMP=ACTIVE within 7d active window.; Operator note: core notes", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "NetworkDevice", "item_id": "dev-acc-02", "site_id": "site-001", "name": "sw-access-02", "classification": "Confirmed Active", "confidence": 0.8175, "signals": [{"signal_type": "ARP_RECENCY", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 432000.0, "details": "ARP for IP 10.1.10.50 (MAC 00:11:22:33:44:55) is active: observed at <TIMESTAMP> (age 5.00d <= active threshold 7d); IP 10.1.10.50: no ARP timestamp recorded", "source": "sot.arp", "metadata": {}}, {"signal_type": "PORT_STATE", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": null, "details": "Port dev-core-01:uplink-1:24 (dev-core-01:1:24) [admin='up', oper='up', poe=None] -> ACTIVE (link UP)", "source": "sot.port_state", "metadata": {}}, {"signal_type": "LAST_SEEN_TIMESTAMP", "status": "INACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 20174400.0, "details": "last_seen for NetworkDevice sw-access-02 (dev-acc-02) is stale: observed at <TIMESTAMP> (age 233.50d > stale threshold 30d)", "source": "sot.last_seen", "metadata": {}}], "rationale": "Confirmed Active for NetworkDevice sw-access-02 (dev-acc-02): corroborated by ARP_RECENCY=ACTIVE, PORT_STATE=ACTIVE within 7d active window.", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "Equipment", "item_id": "eq-win-01", "site_id": "site-001", "name": "win-app-01<b>&\"'{x}<\/script>", "classification": "Confirmed Active", "confidence": 0.88, "signals": [{"signal_type": "ARP_RECENCY", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 432000.0, "details": "ARP for IP 10.1.10.50 (MAC 00:11:22:33:44:55) is active: observed at <TIMESTAMP> (age 5.00d <= active threshold 7d); IP 10.1.10.50: no ARP timestamp recorded", "source": "sot.arp", "metadata": {}}, {"signal_type": "PORT_STATE", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": null, "details": "Port dev-core-01:1:1 (dev-core-01:1:1) [admin='up', oper='up', poe='delivering'] -> ACTIVE (link UP and PoE delivering power)", "source": "sot.port_state", "metadata": {}}, {"signal_type": "LAST_SEEN_TIMESTAMP", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 432000.0, "details": "last_seen for Equipment win-app-01<b>&\"'{x}<\/script> (eq-win-01) is active: observed at <TIMESTAMP> (age 5.00d <= active threshold 7d)", "source": "sot.last_seen", "metadata": {}}, {"signal_type": "VM_POWER_STATE", "status": "UNREACHABLE", "observed_at": null, "age_seconds": null, "details": "Equipment win-app-01<b>&\"'{x}<\/script> (eq-win-01): no vCenter inventory provider available to query VM power state", "source": "vcenter.vm_power_state", "metadata": {}}], "rationale": "Confirmed Active for Equipment win-app-01<b>&\"'{x}<\/script> (eq-win-01): corroborated by ARP_RECENCY=ACTIVE, PORT_STATE=ACTIVE, LAST_SEEN_TIMESTAMP=ACTIVE within 7d active window.; Operator note: patched <b>&\"'{x}<\/script>", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "Equipment", "item_id": "eq-old-01", "site_id": "site-001", "name": "old-printer", "classification": "Stale / Likely Unused", "confidence": 0.758, "signals": [{"signal_type": "ARP_RECENCY", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "No correlated IP or ARP records found for target", "source": "sot.arp", "metadata": {}}, {"signal_type": "PORT_STATE", "status": "INACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": null, "details": "Port dev-core-01:1:2 (dev-core-01:1:2) [admin='up', oper='down', poe='auto'] -> INACTIVE (link down / no PoE draw)", "source": "sot.port_state", "metadata": {}}, {"signal_type": "LAST_SEEN_TIMESTAMP", "status": "INACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 20174400.0, "details": "last_seen for Equipment old-printer (eq-old-01) is stale: observed at <TIMESTAMP> (age 233.50d > stale threshold 30d)", "source": "sot.last_seen", "metadata": {}}], "rationale": "Stale / Likely Unused for Equipment old-printer (eq-old-01): all applicable signals indicate inactivity beyond 30d stale threshold [ARP_RECENCY=NOT_APPLICABLE, PORT_STATE=INACTIVE, LAST_SEEN_TIMESTAMP=INACTIVE].", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "Equipment", "item_id": "eq-mystery-01", "site_id": "site-001", "name": "unknown-box-99", "classification": "Insufficient Data", "confidence": 0.0, "signals": [{"signal_type": "ARP_RECENCY", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "No correlated IP or ARP records found for target", "source": "sot.arp", "metadata": {}}, {"signal_type": "PORT_STATE", "status": "NOT_APPLICABLE", "observed_at": "<TIMESTAMP>", "age_seconds": null, "details": "No mapped switch ports found for target", "source": "sot.port_state", "metadata": {}}, {"signal_type": "LAST_SEEN_TIMESTAMP", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "Equipment unknown-box-99 (eq-mystery-01): no last_seen timestamp recorded", "source": "sot.last_seen", "metadata": {}}], "rationale": "Insufficient Data for Equipment unknown-box-99 (eq-mystery-01): no actionable identifiers or applicable validation signals available (all signals absent or NOT_APPLICABLE).", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "IPAddress", "item_id": "10.1.10.50", "site_id": "site-001", "name": "10.1.10.50", "classification": "Confirmed Active", "confidence": 0.82, "signals": [{"signal_type": "ARP_RECENCY", "status": "ACTIVE", "observed_at": "<TIMESTAMP>", "age_seconds": 432000.0, "details": "ARP for IP 10.1.10.50 (MAC 00:11:22:33:44:55) is active: observed at <TIMESTAMP> (age 5.00d <= active threshold 7d)", "source": "sot.arp", "metadata": {}}], "rationale": "Confirmed Active for IPAddress 10.1.10.50 (10.1.10.50): corroborated by ARP_RECENCY=ACTIVE within 7d active window.", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "IPAddress", "item_id": "10.1.10.50", "site_id": "site-001", "name": "10.1.10.50", "classification": "Insufficient Data", "confidence": 0.0, "signals": [{"signal_type": "ARP_RECENCY", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "IP 10.1.10.50: no ARP timestamp recorded", "source": "sot.arp", "metadata": {}}], "rationale": "Insufficient Data for IPAddress 10.1.10.50 (10.1.10.50): no actionable identifiers or applicable validation signals available (all signals absent or NOT_APPLICABLE).", "evaluated_at": "<TIMESTAMP>"}, {"item_type": "IPAddress", "item_id": "10.1.30.9", "site_id": "site-001", "name": "10.1.30.9", "classification": "Insufficient Data", "confidence": 0.0, "signals": [{"signal_type": "ARP_RECENCY", "status": "NOT_APPLICABLE", "observed_at": null, "age_seconds": null, "details": "IP 10.1.30.9: no ARP timestamp recorded", "source": "sot.arp", "metadata": {}}], "rationale": "Insufficient Data for IPAddress 10.1.30.9 (10.1.30.9): no actionable identifiers or applicable validation signals available (all signals absent or NOT_APPLICABLE).", "evaluated_at": "<TIMESTAMP>"}], "templates": [{"template_id": "extreme-exos-48p", "vendor": "Extreme Networks", "model": "Summit X460-G2-48p", "role": "switch", "default_port_count": 48, "port_naming_pattern": "1:{n}", "supports_poe": true, "supports_vlans": true, "default_vlan_id": "1", "default_ports": []}, {"template_id": "extreme-exos-24p", "vendor": "Extreme Networks", "model": "Summit X440-G2-24p", "role": "switch", "default_port_count": 24, "port_naming_pattern": "1:{n}", "supports_poe": true, "supports_vlans": true, "default_vlan_id": "1", "default_ports": []}, {"template_id": "extreme-voss-core", "vendor": "Extreme Networks", "model": "VSP 7400-48Y", "role": "l3_switch", "default_port_count": 48, "port_naming_pattern": "1/{n}", "supports_poe": false, "supports_vlans": true, "default_vlan_id": "1", "default_ports": []}, {"template_id": "unifi-multi-vlan-router", "vendor": "Ubiquiti", "model": "UniFi Gateway Enterprise", "role": "router", "default_port_count": 8, "port_naming_pattern": "eth{n}", "supports_poe": false, "supports_vlans": true, "default_vlan_id": null, "default_ports": []}, {"template_id": "proxmox-ve-host", "vendor": "Proxmox", "model": "Proxmox VE Host", "role": "hypervisor", "default_port_count": 4, "port_naming_pattern": "vmbr{n}", "supports_poe": false, "supports_vlans": true, "default_vlan_id": null, "default_ports": []}, {"template_id": "apc-smart-ups", "vendor": "APC", "model": "Smart-UPS SMT1500RM2U", "role": "ups", "default_port_count": 1, "port_naming_pattern": "mgmt{n}", "supports_poe": false, "supports_vlans": false, "default_vlan_id": null, "default_ports": []}, {"template_id": "generic-smb-nas", "vendor": "Synology", "model": "RackStation NAS", "role": "nas", "default_port_count": 2, "port_naming_pattern": "eth{n}", "supports_poe": false, "supports_vlans": true, "default_vlan_id": null, "default_ports": []}], "patches": [{"target_type": "Equipment", "target_id": "eq-win-01", "site_id": "site-001", "name": null, "hostname": null, "category": null, "role": null, "vendor": null, "model": null, "vlan_id": "10", "subnet_id": null, "room": "MDF-1", "notes": "patched <b>&\"'{x}<\/script>", "pinned_classification": null, "custom_attributes": {"vlan_id": "10", "room": "MDF-1"}, "deleted": false, "updated_at": "<TIMESTAMP>"}, {"target_type": "NetworkDevice", "target_id": "dev-core-01", "site_id": "site-001", "name": null, "hostname": null, "category": null, "role": null, "vendor": null, "model": null, "vlan_id": null, "subnet_id": null, "room": "IDF-2", "notes": "core notes", "pinned_classification": null, "custom_attributes": {}, "deleted": false, "updated_at": "<TIMESTAMP>"}], "vlan_subnet_summary": [{"vlan_id": "10", "vlan_name": "Servers <b>&\"'{x}<\/script>", "subnet_id": "sub-10", "cidr": "10.1.10.0/24", "gateway": "10.1.10.1", "ip_count": 2, "device_port_count": 2, "equipment_count": 2}, {"vlan_id": "20", "vlan_name": "Uplinks", "subnet_id": "sub-20", "cidr": "10.1.20.0/24", "gateway": "10.1.20.1", "ip_count": 0, "device_port_count": 1, "equipment_count": 0}], "summary": {"total_devices": 2, "total_ports": 3, "active_ports": 2, "poe_ports": 2, "total_vlans": 2, "total_subnets": 2, "total_ips": 3, "total_equipment": 3, "classification_counts": {"Confirmed Active": 4, "Stale / Likely Unused": 1, "Unreachable / Needs Manual Review": 0, "Insufficient Data": 3}}, "audit_log": [{"entry_id": "audit-0001-<UUID>", "timestamp": "<TIMESTAMP>", "actor": "golden", "action": "UPSERT_PATCH", "target_type": "Equipment", "target_id": "eq-win-01", "changes": {"site_id": "site-001", "vlan_id": "10", "room": "MDF-1", "notes": "patched <b>&\"'{x}<\/script>", "custom_attributes": {"vlan_id": "10", "room": "MDF-1"}}, "reason": "golden reason <b>&\"'{x}<\/script>", "site_id": "site-001", "prev_hash": "<SHA256>", "entry_hash": "<SHA256>"}, {"entry_id": "audit-0002-<UUID>", "timestamp": "<TIMESTAMP>", "actor": "golden", "action": "UPSERT_PATCH", "target_type": "NetworkDevice", "target_id": "dev-core-01", "changes": {"site_id": "site-001", "room": "IDF-2", "notes": "core notes"}, "reason": "device note", "site_id": "site-001", "prev_hash": "<SHA256>", "entry_hash": "<SHA256>"}]}</script>
+<script id="initial-topology" type="application/json">{"site_id": "site-001", "nodes": [{"node_id": "site-001", "node_type": "site", "label": "SF HQ <b>&\"'{x}<\/script>", "ip": null, "mac": null, "vlan_id": null, "status": null, "metadata": {"address": "100 Market St, San Francisco, CA", "contact_info": "netops@example.com", "rooms": ["MDF-1", "IDF-2"]}}, {"node_id": "dev-core-01", "node_type": "switch", "label": "sw-core-01<b>&\"'{x}<\/script>", "ip": "10.1.1.2", "mac": null, "vlan_id": "10", "status": "Confirmed Active", "metadata": {"vendor": "Extreme Networks", "model": "Summit X440-G2-24p", "role": "switch", "port_count": 3, "confidence": 0.7425}}, {"node_id": "dev-acc-02", "node_type": "switch", "label": "sw-access-02", "ip": "10.1.10.50", "mac": null, "vlan_id": "10", "status": "Confirmed Active", "metadata": {"vendor": "Extreme Networks", "model": "VSP 7400-48Y", "role": "switch", "port_count": 0, "confidence": 0.8175}}, {"node_id": "10", "node_type": "vlan", "label": "Servers <b>&\"'{x}<\/script>", "ip": null, "mac": null, "vlan_id": "10", "status": null, "metadata": {"subnet_id": "sub-10", "cidr": "10.1.10.0/24", "gateway": "10.1.10.1"}}, {"node_id": "20", "node_type": "vlan", "label": "Uplinks", "ip": null, "mac": null, "vlan_id": "20", "status": null, "metadata": {"subnet_id": "sub-20", "cidr": "10.1.20.0/24", "gateway": "10.1.20.1"}}, {"node_id": "sub-10", "node_type": "subnet", "label": "Servers", "ip": "10.1.10.1", "mac": null, "vlan_id": "10", "status": null, "metadata": {"cidr": "10.1.10.0/24", "gateway": "10.1.10.1"}}, {"node_id": "sub-20", "node_type": "subnet", "label": "Uplinks", "ip": "10.1.20.1", "mac": null, "vlan_id": "20", "status": null, "metadata": {"cidr": "10.1.20.0/24", "gateway": "10.1.20.1"}}, {"node_id": "dev-core-01:1:1", "node_type": "port", "label": "sw-core-01<b>&\"'{x}<\/script>:1:1", "ip": null, "mac": "00:11:22:33:44:55", "vlan_id": "10", "status": "up", "metadata": {"device_id": "dev-core-01", "name": "1:1", "admin_status": "up", "oper_status": "up", "poe_status": "delivering", "connected_device_id": "eq-win-01"}}, {"node_id": "dev-core-01:1:2", "node_type": "port", "label": "sw-core-01<b>&\"'{x}<\/script>:1:2", "ip": null, "mac": null, "vlan_id": "10", "status": "down", "metadata": {"device_id": "dev-core-01", "name": "1:2", "admin_status": "up", "oper_status": "down", "poe_status": "auto", "connected_device_id": null}}, {"node_id": "dev-core-01:1:24", "node_type": "port", "label": "sw-core-01<b>&\"'{x}<\/script>:uplink-1:24", "ip": null, "mac": null, "vlan_id": "20", "status": "up", "metadata": {"device_id": "dev-core-01", "name": "uplink-1:24", "admin_status": "up", "oper_status": "up", "poe_status": null, "connected_device_id": "dev-acc-02"}}, {"node_id": "eq-win-01", "node_type": "equipment", "label": "win-app-01<b>&\"'{x}<\/script>", "ip": "10.1.10.50", "mac": "00:11:22:33:44:55", "vlan_id": "10", "status": "Confirmed Active", "metadata": {"category": "vm", "assigned_ips": ["10.1.10.50"], "connected_ports": ["dev-core-01:1:1"], "hypervisor_id": null, "power_state": "poweredOn", "confidence": 0.88}}, {"node_id": "eq-old-01", "node_type": "equipment", "label": "old-printer", "ip": null, "mac": null, "vlan_id": "10", "status": "Stale / Likely Unused", "metadata": {"category": "other", "assigned_ips": [], "connected_ports": ["dev-core-01:1:2"], "hypervisor_id": null, "power_state": null, "confidence": 0.758}}, {"node_id": "eq-mystery-01", "node_type": "equipment", "label": "unknown-box-99", "ip": null, "mac": null, "vlan_id": null, "status": "Insufficient Data", "metadata": {"category": "other", "assigned_ips": [], "connected_ports": [], "hypervisor_id": null, "power_state": null, "confidence": 0.0}}, {"node_id": "10.1.10.50", "node_type": "ip", "label": "10.1.10.50", "ip": "10.1.10.50", "mac": "00:11:22:33:44:55", "vlan_id": "10", "status": "Insufficient Data", "metadata": {"subnet_id": "sub-10", "assigned_object_type": "Equipment", "assigned_object_id": "eq-win-01", "arp_source_device_id": "dev-core-01", "confidence": 0.0}}, {"node_id": "ip:10.1.10.50", "node_type": "ip", "label": "10.1.10.50", "ip": "10.1.10.50", "mac": null, "vlan_id": "10", "status": "Insufficient Data", "metadata": {"subnet_id": "sub-10", "assigned_object_type": "NetworkDevice", "assigned_object_id": "dev-acc-02", "arp_source_device_id": null, "confidence": 0.0}}, {"node_id": "10.1.30.9", "node_type": "ip", "label": "10.1.30.9", "ip": "10.1.30.9", "mac": null, "vlan_id": null, "status": "Insufficient Data", "metadata": {"subnet_id": "sub-missing", "assigned_object_type": null, "assigned_object_id": null, "arp_source_device_id": null, "confidence": 0.0}}], "edges": [{"source_id": "site-001", "target_id": "dev-core-01", "relation": "uplink_to", "port_name": null, "vlan_id": null, "poe_status": null}, {"source_id": "site-001", "target_id": "dev-acc-02", "relation": "uplink_to", "port_name": null, "vlan_id": null, "poe_status": null}, {"source_id": "dev-core-01", "target_id": "dev-acc-02", "relation": "uplink_to", "port_name": "uplink-1:24", "vlan_id": "20", "poe_status": null}, {"source_id": "10", "target_id": "sub-10", "relation": "routes_vlan", "port_name": null, "vlan_id": "10", "poe_status": null}, {"source_id": "20", "target_id": "sub-20", "relation": "routes_vlan", "port_name": null, "vlan_id": "20", "poe_status": null}, {"source_id": "dev-core-01", "target_id": "dev-core-01:1:1", "relation": "connected_port", "port_name": "1:1", "vlan_id": "10", "poe_status": "delivering"}, {"source_id": "dev-core-01:1:1", "target_id": "eq-win-01", "relation": "connected_port", "port_name": "1:1", "vlan_id": "10", "poe_status": "delivering"}, {"source_id": "dev-core-01", "target_id": "dev-core-01:1:2", "relation": "connected_port", "port_name": "1:2", "vlan_id": "10", "poe_status": "auto"}, {"source_id": "dev-core-01:1:2", "target_id": "eq-old-01", "relation": "connected_port", "port_name": "1:2", "vlan_id": "10", "poe_status": "auto"}, {"source_id": "dev-core-01", "target_id": "dev-core-01:1:24", "relation": "connected_port", "port_name": "uplink-1:24", "vlan_id": "20", "poe_status": null}, {"source_id": "dev-core-01:1:24", "target_id": "dev-acc-02", "relation": "connected_port", "port_name": "uplink-1:24", "vlan_id": "20", "poe_status": null}, {"source_id": "10", "target_id": "eq-win-01", "relation": "member_of_vlan", "port_name": null, "vlan_id": "10", "poe_status": null}, {"source_id": "10", "target_id": "eq-old-01", "relation": "member_of_vlan", "port_name": null, "vlan_id": "10", "poe_status": null}, {"source_id": "10", "target_id": "dev-core-01", "relation": "member_of_vlan", "port_name": null, "vlan_id": "10", "poe_status": null}, {"source_id": "20", "target_id": "dev-core-01", "relation": "member_of_vlan", "port_name": null, "vlan_id": "20", "poe_status": null}, {"source_id": "10", "target_id": "dev-acc-02", "relation": "member_of_vlan", "port_name": null, "vlan_id": "10", "poe_status": null}, {"source_id": "eq-win-01", "target_id": "ip:10.1.10.50", "relation": "assigned_ip", "port_name": null, "vlan_id": null, "poe_status": null}, {"source_id": "dev-acc-02", "target_id": "ip:10.1.10.50", "relation": "assigned_ip", "port_name": null, "vlan_id": null, "poe_status": null}], "summary_counts": {"total_nodes": 16, "total_edges": 18, "site": 1, "router": 0, "switch": 2, "vlan": 2, "subnet": 2, "port": 3, "equipment": 3, "ip": 3, "routes_vlan": 2, "uplink_to": 3, "member_of_vlan": 5, "connected_port": 6, "assigned_ip": 2, "hosts_vm": 0}, "mermaid": "flowchart LR\n    site_001[\"SF HQ <b>&''{x}<\/script>\"]\n    dev_core_01[\"sw-core-01<b>&''{x}<\/script> - 10.1.1.2\"]\n    dev_acc_02[\"sw-access-02 - 10.1.10.50\"]\n    n_10[\"Servers <b>&''{x}<\/script>\"]\n    n_20[\"Uplinks\"]\n    sub_10[\"Servers - 10.1.10.1\"]\n    sub_20[\"Uplinks - 10.1.20.1\"]\n    dev_core_01_1_1[\"sw-core-01<b>&''{x}<\/script>:1:1\"]\n    dev_core_01_1_2[\"sw-core-01<b>&''{x}<\/script>:1:2\"]\n    dev_core_01_1_24[\"sw-core-01<b>&''{x}<\/script>:uplink-1:24\"]\n    eq_win_01[\"win-app-01<b>&''{x}<\/script> - 10.1.10.50\"]\n    eq_old_01[\"old-printer\"]\n    eq_mystery_01[\"unknown-box-99\"]\n    n_10_1_10_50[\"10.1.10.50\"]\n    ip_10_1_10_50[\"10.1.10.50\"]\n    n_10_1_30_9[\"10.1.30.9\"]\n    site_001 -->|uplink_to| dev_core_01\n    site_001 -->|uplink_to| dev_acc_02\n    dev_core_01 -->|uplink_to uplink-1:24 VLAN 20| dev_acc_02\n    n_10 -->|routes_vlan VLAN 10| sub_10\n    n_20 -->|routes_vlan VLAN 20| sub_20\n    dev_core_01 -->|connected_port 1:1 VLAN 10 PoE:delivering| dev_core_01_1_1\n    dev_core_01_1_1 -->|connected_port 1:1 VLAN 10 PoE:delivering| eq_win_01\n    dev_core_01 -->|connected_port 1:2 VLAN 10 PoE:auto| dev_core_01_1_2\n    dev_core_01_1_2 -->|connected_port 1:2 VLAN 10 PoE:auto| eq_old_01\n    dev_core_01 -->|connected_port uplink-1:24 VLAN 20| dev_core_01_1_24\n    dev_core_01_1_24 -->|connected_port uplink-1:24 VLAN 20| dev_acc_02\n    n_10 -->|member_of_vlan VLAN 10| eq_win_01\n    n_10 -->|member_of_vlan VLAN 10| eq_old_01\n    n_10 -->|member_of_vlan VLAN 10| dev_core_01\n    n_20 -->|member_of_vlan VLAN 20| dev_core_01\n    n_10 -->|member_of_vlan VLAN 10| dev_acc_02\n    eq_win_01 -->|assigned_ip| ip_10_1_10_50\n    dev_acc_02 -->|assigned_ip| ip_10_1_10_50"}</script>
+<script>
+let WORKBENCH_STATE = JSON.parse(document.getElementById('initial-workbench-state').textContent);
+
+const WORKBENCH_TOKEN_KEY = 'sot-validator-workbench-token';
+
+function workbenchToken() {
+  try {
+    return window.sessionStorage.getItem(WORKBENCH_TOKEN_KEY) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function loadWorkbenchToken() {
+  try {
+    const hash = window.location.hash || '';
+    if (hash.length > 1) {
+      const fragmentToken = new URLSearchParams(hash.slice(1)).get('token');
+      if (fragmentToken) {
+        window.sessionStorage.setItem(WORKBENCH_TOKEN_KEY, fragmentToken);
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            null, '', window.location.pathname + window.location.search
+          );
+        }
+        return fragmentToken;
+      }
+    }
+  } catch (err) {
+    return '';
+  }
+  return workbenchToken();
+}
+
+loadWorkbenchToken();
+
+function authFailureMessage(status) {
+  if (status === 401) {
+    if (!workbenchToken()) {
+      return 'No workbench token set: reload this page with #token=<token> to enable edits.';
+    }
+    return 'Workbench token rejected: check the token and reload this page with #token=<token>.';
+  }
+  if (status === 403) {
+    return 'Write rejected as cross-origin: open the workbench at its own address and reload with #token=<token>.';
+  }
+  if (status === 413) {
+    return 'Request too large: shorten the form and try again.';
+  }
+  return '';
+}
+
+function escapeHtml(val) {
+  if (val === null || val === undefined) return '';
+  return String(val)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function badgeClass(cls) {
+  if (cls === 'Confirmed Active') return 'badge-active';
+  if (cls === 'Stale / Likely Unused') return 'badge-stale';
+  if (cls === 'Unreachable / Needs Manual Review') return 'badge-unreachable';
+  return 'badge-insufficient';
+}
+
+function showBanner(msg, isError) {
+  const el = document.getElementById('status-banner');
+  el.style.display = 'block';
+  el.style.background = isError ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.25)';
+  el.style.border = isError ? '1px solid #ef4444' : '1px solid #22c55e';
+  el.textContent = msg;
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === tabId);
+  });
+}
+
+function renderState(state) {
+  WORKBENCH_STATE = state;
+  const s = state.summary || {};
+  const clsCounts = s.classification_counts || {};
+  document.getElementById('kpi-total-devices').textContent = s.total_devices || 0;
+  document.getElementById('kpi-total-ports').textContent = s.total_ports || 0;
+  document.getElementById('kpi-active-ports').textContent = s.active_ports || 0;
+  document.getElementById('kpi-poe-ports').textContent = s.poe_ports || 0;
+  document.getElementById('kpi-total-vlans').textContent = s.total_vlans || 0;
+  document.getElementById('kpi-total-subnets').textContent = s.total_subnets || 0;
+  document.getElementById('kpi-total-equipment').textContent = s.total_equipment || 0;
+  document.getElementById('kpi-total-ips').textContent = s.total_ips || 0;
+  document.getElementById('kpi-confirmed-active').textContent = (clsCounts['Confirmed Active'] || 0) + ' Active';
+  document.getElementById('kpi-stale').textContent = clsCounts['Stale / Likely Unused'] || 0;
+  document.getElementById('kpi-unreachable').textContent = clsCounts['Unreachable / Needs Manual Review'] || 0;
+  document.getElementById('kpi-insufficient').textContent = clsCounts['Insufficient Data'] || 0;
+
+  const resMap = {};
+  (state.results || []).forEach(r => { resMap[r.item_type + ':' + r.item_id] = r; });
+  const patchMap = {};
+  (state.patches || []).forEach(p => { if (!p.deleted) patchMap[p.target_type + ':' + p.target_id] = p; });
+
+  const site = state.site || {};
+  const invRows = [];
+  (site.devices || []).forEach(dev => {
+    const key = 'NetworkDevice:' + dev.device_id;
+    const res = resMap[key] || {};
+    const patch = patchMap[key] || {};
+    const cls = res.classification || 'Insufficient Data';
+    const room = patch.room || '';
+    const vlan = patch.vlan_id || '';
+    const notes = patch.notes || '';
+    const pCount = (dev.ports || []).length;
+    invRows.push(`<tr data-target-type="NetworkDevice" data-target-id="${escapeHtml(dev.device_id)}" data-vlan="${escapeHtml(vlan)}" data-classification="${escapeHtml(cls)}">
+      <td><code>NetworkDevice</code></td>
+      <td><code>${escapeHtml(dev.device_id)}</code></td>
+      <td><strong>${escapeHtml(dev.hostname)}</strong></td>
+      <td>${escapeHtml(dev.role || 'switch')} (${escapeHtml(dev.vendor || '')} ${escapeHtml(dev.model || '')})</td>
+      <td>${escapeHtml(room)}</td>
+      <td>${escapeHtml(vlan)}</td>
+      <td>${escapeHtml(dev.management_ip || '')} (${pCount} ports)</td>
+      <td>${escapeHtml(notes)}</td>
+      <td><span class="badge ${badgeClass(cls)}">${escapeHtml(cls)}</span></td>
+      <td><button type="button" class="btn btn-sm" onclick="openEditModal('NetworkDevice', '${escapeHtml(dev.device_id)}')">Edit</button></td>
+    </tr>`);
+  });
+
+  (site.equipment || []).forEach(eq => {
+    const key = 'Equipment:' + eq.equipment_id;
+    const res = resMap[key] || {};
+    const patch = patchMap[key] || {};
+    const cls = res.classification || 'Insufficient Data';
+    const custom = patch.custom_attributes || {};
+    const room = patch.room || custom.room || '';
+    const vlan = patch.vlan_id || custom.vlan_id || '';
+    const notes = patch.notes || '';
+    const ips = (eq.assigned_ips || []).join(', ');
+    const ports = (eq.connected_ports || []).join(', ');
+    invRows.push(`<tr data-target-type="Equipment" data-target-id="${escapeHtml(eq.equipment_id)}" data-vlan="${escapeHtml(vlan)}" data-classification="${escapeHtml(cls)}">
+      <td><code>Equipment</code></td>
+      <td><code>${escapeHtml(eq.equipment_id)}</code></td>
+      <td><strong>${escapeHtml(eq.name)}</strong></td>
+      <td>${escapeHtml(eq.category)}</td>
+      <td>${escapeHtml(room)}</td>
+      <td>${escapeHtml(vlan)}</td>
+      <td>${escapeHtml(ips)} ${ports ? '[' + escapeHtml(ports) + ']' : ''}</td>
+      <td>${escapeHtml(notes)}</td>
+      <td><span class="badge ${badgeClass(cls)}">${escapeHtml(cls)}</span></td>
+      <td><button type="button" class="btn btn-sm" onclick="openEditModal('Equipment', '${escapeHtml(eq.equipment_id)}')">Edit</button></td>
+    </tr>`);
+  });
+
+  (site.ip_addresses || []).forEach(ipRec => {
+    const key = 'IPAddress:' + ipRec.ip;
+    const res = resMap[key] || {};
+    const patch = patchMap[key] || {};
+    const cls = res.classification || 'Insufficient Data';
+    const notes = patch.notes || '';
+    invRows.push(`<tr data-target-type="IPAddress" data-target-id="${escapeHtml(ipRec.ip)}" data-subnet="${escapeHtml(ipRec.subnet_id || '')}" data-classification="${escapeHtml(cls)}">
+      <td><code>IPAddress</code></td>
+      <td><code>${escapeHtml(ipRec.ip)}</code></td>
+      <td><strong>${escapeHtml(patch.name || ipRec.ip)}</strong></td>
+      <td>IP Assignment</td>
+      <td>${escapeHtml(patch.room || '')}</td>
+      <td>${escapeHtml(ipRec.subnet_id || '')}</td>
+      <td>${escapeHtml(ipRec.assigned_object_id || '')} ${escapeHtml(ipRec.arp_mac || '')}</td>
+      <td>${escapeHtml(notes)}</td>
+      <td><span class="badge ${badgeClass(cls)}">${escapeHtml(cls)}</span></td>
+      <td><button type="button" class="btn btn-sm" onclick="openEditModal('IPAddress', '${escapeHtml(ipRec.ip)}')">Edit</button></td>
+    </tr>`);
+  });
+  document.getElementById('inventory-tbody').innerHTML = invRows.join('');
+
+  // Update device select and port grids
+  const devSelect = document.getElementById('pm-device-id');
+  devSelect.innerHTML = (site.devices || []).map(d =>
+    `<option value="${escapeHtml(d.device_id)}">${escapeHtml(d.hostname)} (${escapeHtml(d.device_id)})</option>`
+  ).join('');
+
+  const devCards = (site.devices || []).map(d => {
+    const chips = (d.ports || []).map(p => {
+      const oper = (p.oper_status || 'down').toLowerCase();
+      const cls = oper === 'up' ? 'port-up' : 'port-down';
+      const meta = [
+        p.vlan_id ? 'V' + p.vlan_id : '',
+        p.poe_status ? '⚡' + p.poe_status : '',
+        p.connected_mac ? 'MAC:' + p.connected_mac : ''
+      ].filter(Boolean).join(' ');
+      return `<div class="port-chip ${cls}">
+        <span class="port-name">${escapeHtml(p.name)}</span>
+        <span class="port-meta">${escapeHtml(meta)}</span>
+      </div>`;
+    }).join('');
+    return `<div class="device-card" data-device-id="${escapeHtml(d.device_id)}">
+      <div class="device-card-header">
+        <strong>${escapeHtml(d.hostname)}</strong> <code>(${escapeHtml(d.device_id)})</code> —
+        ${escapeHtml(d.vendor || '')} ${escapeHtml(d.model || '')} [${escapeHtml(d.role || 'switch')}]
+        IP: <code>${escapeHtml(d.management_ip || 'N/A')}</code>
+      </div>
+      <div class="port-grid">${chips || '<em>No ports provisioned</em>'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('device-port-grids').innerHTML = devCards;
+
+  // Update VLAN summary table
+  const vlanRows = (state.vlan_subnet_summary || []).map(vs => `<tr>
+    <td><code>${escapeHtml(vs.vlan_id || '-')}</code></td>
+    <td><strong>${escapeHtml(vs.vlan_name || '-')}</strong></td>
+    <td><code>${escapeHtml(vs.subnet_id || '-')}</code></td>
+    <td><code>${escapeHtml(vs.cidr || '-')}</code></td>
+    <td><code>${escapeHtml(vs.gateway || '-')}</code></td>
+    <td>${Number(vs.ip_count || 0)}</td>
+    <td>${Number(vs.device_port_count || 0)}</td>
+    <td>${Number(vs.equipment_count || 0)}</td>
+  </tr>`).join('');
+  document.getElementById('vlan-summary-tbody').innerHTML = vlanRows;
+
+  // Update Audit log table
+  const auditRows = (state.audit_log || []).map(a => `<tr>
+    <td><code>${escapeHtml(a.timestamp)}</code></td>
+    <td>${escapeHtml(a.actor)}</td>
+    <td><span class="badge badge-info">${escapeHtml(a.action)}</span></td>
+    <td><code>${escapeHtml(a.target_type)}:${escapeHtml(a.target_id)}</code></td>
+    <td><code>${escapeHtml(JSON.stringify(a.changes || {}))}</code></td>
+    <td>${escapeHtml(a.reason)}</td>
+  </tr>`).join('');
+  document.getElementById('audit-log-tbody').innerHTML = auditRows;
+
+  applyInventoryFilters();
+  renderSwitchFaceplate();
+  refreshTopologyMap();
+  refreshQualityFindings();
+}
+
+function applyInventoryFilters() {
+  const q = (document.getElementById('inventory-search').value || '').toLowerCase();
+  const vlan = document.getElementById('filter-vlan').value || '';
+  const subnet = document.getElementById('filter-subnet').value || '';
+  const cls = document.getElementById('filter-classification').value || '';
+
+  document.querySelectorAll('#inventory-tbody tr').forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const rowVlan = row.getAttribute('data-vlan') || '';
+    const rowSubnet = row.getAttribute('data-subnet') || '';
+    const rowCls = row.getAttribute('data-classification') || '';
+    const matchQ = !q || text.includes(q);
+    const matchVlan = !vlan || rowVlan === vlan;
+    const matchSubnet = !subnet || rowSubnet === subnet;
+    const matchCls = !cls || rowCls === cls;
+    row.style.display = (matchQ && matchVlan && matchSubnet && matchCls) ? '' : 'none';
+  });
+}
+
+async function refreshFromApi() {
+  const resp = await fetch('/api/state');
+  if (resp.ok) {
+    const data = await resp.json();
+    renderState(data);
+  }
+}
+
+async function refreshAuditLog() {
+  const resp = await fetch('/api/audit-log');
+  if (resp.ok) {
+    const data = await resp.json();
+    if (data.audit_log) {
+      WORKBENCH_STATE.audit_log = data.audit_log;
+      renderState(WORKBENCH_STATE);
+    }
+  }
+}
+
+function openEditModal(targetType, targetId) {
+  document.getElementById('edit-target-type').value = targetType;
+  document.getElementById('edit-target-id').value = targetId;
+  const site = WORKBENCH_STATE.site || {};
+  const patches = WORKBENCH_STATE.patches || [];
+  const patch = patches.find(p => p.target_type === targetType && p.target_id === targetId && !p.deleted) || {};
+
+  let name = patch.name || patch.hostname || '';
+  let catRole = patch.category || patch.role || '';
+  if (targetType === 'NetworkDevice') {
+    const dev = (site.devices || []).find(d => d.device_id === targetId) || {};
+    name = name || dev.hostname || '';
+    catRole = catRole || dev.role || '';
+  } else if (targetType === 'Equipment') {
+    const eq = (site.equipment || []).find(e => e.equipment_id === targetId) || {};
+    name = name || eq.name || '';
+    catRole = catRole || eq.category || '';
+  } else if (targetType === 'IPAddress') {
+    name = name || targetId;
+  }
+
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-category-role').value = catRole;
+  document.getElementById('edit-room').value = patch.room || (patch.custom_attributes && patch.custom_attributes.room) || '';
+  document.getElementById('edit-vlan-id').value = patch.vlan_id || (patch.custom_attributes && patch.custom_attributes.vlan_id) || '';
+  document.getElementById('edit-notes').value = patch.notes || '';
+  document.getElementById('edit-pinned-classification').value = patch.pinned_classification || '';
+  document.getElementById('edit-reason').value = '';
+  document.getElementById('item-edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('item-edit-modal').classList.remove('open');
+}
+
+async function submitItemPatch(ev) {
+  ev.preventDefault();
+  const targetType = document.getElementById('edit-target-type').value;
+  const targetId = document.getElementById('edit-target-id').value;
+  const nameVal = document.getElementById('edit-name').value;
+  const catRoleVal = document.getElementById('edit-category-role').value;
+  const payload = {
+    target_type: targetType,
+    target_id: targetId,
+    name: nameVal || null,
+    hostname: targetType === 'NetworkDevice' ? (nameVal || null) : null,
+    category: targetType === 'Equipment' ? (catRoleVal || null) : null,
+    role: targetType === 'NetworkDevice' ? (catRoleVal || null) : null,
+    room: document.getElementById('edit-room').value || null,
+    vlan_id: document.getElementById('edit-vlan-id').value || null,
+    notes: document.getElementById('edit-notes').value || null,
+    pinned_classification: document.getElementById('edit-pinned-classification').value || null,
+    reason: document.getElementById('edit-reason').value || 'Updated via Workbench UI'
+  };
+  const resp = await fetch('/api/items/patch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (resp.ok && data.state) {
+    closeEditModal();
+    renderState(data.state);
+    showBanner('Saved item patch for ' + targetType + ' ' + targetId, false);
+  } else {
+    showBanner(authFailureMessage(resp.status) || data.error || 'Failed to save patch', true);
+  }
+}
+
+async function submitDeleteCurrentItem() {
+  const targetType = document.getElementById('edit-target-type').value;
+  const targetId = document.getElementById('edit-target-id').value;
+  const resp = await fetch('/api/items/patch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+    body: JSON.stringify({
+      target_type: targetType,
+      target_id: targetId,
+      deleted: true,
+      reason: document.getElementById('edit-reason').value || 'Deleted via Workbench UI'
+    })
+  });
+  const data = await resp.json();
+  if (resp.ok && data.state) {
+    closeEditModal();
+    renderState(data.state);
+    showBanner('Deleted ' + targetType + ' ' + targetId, false);
+  } else {
+    showBanner(authFailureMessage(resp.status) || data.error || 'Failed to delete item', true);
+  }
+}
+
+async function submitCreateDevice(ev) {
+  ev.preventDefault();
+  const payload = {
+    hostname: document.getElementById('dev-hostname').value,
+    device_id: document.getElementById('dev-device-id').value || null,
+    template_id: document.getElementById('dev-template-id').value || null,
+    management_ip: document.getElementById('dev-mgmt-ip').value || null,
+    role: document.getElementById('dev-role').value || null,
+    port_count: document.getElementById('dev-port-count').value ? Number(document.getElementById('dev-port-count').value) : null,
+    default_vlan_id: document.getElementById('dev-default-vlan').value || null,
+    reason: document.getElementById('dev-reason').value || 'Created device via Workbench UI'
+  };
+  const resp = await fetch('/api/devices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (resp.ok && data.state) {
+    document.getElementById('create-device-form').reset();
+    renderState(data.state);
+    showBanner('Created device ' + data.device.hostname, false);
+  } else {
+    showBanner(authFailureMessage(resp.status) || data.error || 'Failed to create device', true);
+  }
+}
+
+async function submitPortManager(ev) {
+  ev.preventDefault();
+  const payload = {
+    device_id: document.getElementById('pm-device-id').value,
+    name: document.getElementById('pm-port-name').value || null,
+    range_spec: document.getElementById('pm-range-spec').value || null,
+    admin_status: document.getElementById('pm-admin-status').value || 'up',
+    oper_status: document.getElementById('pm-oper-status').value || 'down',
+    poe_status: document.getElementById('pm-poe-status').value || null,
+    vlan_id: document.getElementById('pm-vlan-id').value || null,
+    connected_mac: document.getElementById('pm-connected-mac').value || null,
+    connected_device_id: document.getElementById('pm-connected-device').value || null,
+    reason: document.getElementById('pm-reason').value || 'Updated ports via Workbench UI'
+  };
+  const resp = await fetch('/api/devices/ports', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (resp.ok && data.state) {
+    renderState(data.state);
+    showBanner('Updated ' + (data.ports ? data.ports.length : 0) + ' port(s)', false);
+  } else {
+    showBanner(authFailureMessage(resp.status) || data.error || 'Failed to update ports', true);
+  }
+}
+
+async function submitVlanForm(ev) {
+  ev.preventDefault();
+  const payload = {
+    vlan_id: document.getElementById('vlan-id-input').value,
+    name: document.getElementById('vlan-name-input').value || null,
+    subnet_id: document.getElementById('vlan-subnet-id-input').value || null,
+    cidr: document.getElementById('vlan-cidr-input').value || null,
+    gateway: document.getElementById('vlan-gateway-input').value || null,
+    reason: document.getElementById('vlan-reason-input').value || 'Saved VLAN/Subnet via Workbench UI'
+  };
+  const resp = await fetch('/api/vlans', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if (resp.ok && data.state) {
+    document.getElementById('vlan-form').reset();
+    renderState(data.state);
+    showBanner('Saved VLAN ' + data.vlan.vlan_id, false);
+  } else {
+    showBanner(authFailureMessage(resp.status) || data.error || 'Failed to save VLAN', true);
+  }
+}
+
+let TOPOLOGY_GRAPH = JSON.parse(document.getElementById('initial-topology').textContent);
+const FACEPLATE_TEMPLATES = [["extreme networks", "summit x440-g2-24p", "24"], ["extreme networks", "summit x460-g2-48p", "48"], ["extreme networks", "vsp 7400-48y", "48"]];
+const TOPO_COLUMN_ORDER = ['site', 'router', 'switch', 'vlan', 'subnet', 'port', 'equipment', 'ip'];
+const TOPO_NODE_W = 200;
+const TOPO_NODE_H = 56;
+const TOPO_COL_WIDTH = 224;
+const TOPO_ROW_HEIGHT = 56;
+const TOPO_PAD_X = 24;
+const TOPO_PAD_Y = 36;
+const FACEPLATE_STATE_LABEL = {
+  'faceplate-stale': 'Stale',
+  'faceplate-uplink': 'Uplink',
+  'faceplate-up': 'Up',
+  'faceplate-down': 'Down'
+};
+
+function templatePortsAttr(vendor, model) {
+  const v = String(vendor || '').trim().toLowerCase();
+  const m = String(model || '').trim().toLowerCase();
+  for (let i = 0; i < FACEPLATE_TEMPLATES.length; i++) {
+    const row = FACEPLATE_TEMPLATES[i];
+    if (v === row[0] && m === row[1]) return row[2];
+  }
+  return null;
+}
+
+function faceplateColumns(portCount) {
+  if (portCount === 24) return 12;
+  if (portCount === 48) return 24;
+  if (!portCount || portCount < 0) return 0;
+  return Math.ceil(portCount / 2);
+}
+
+function poeBadgeText(poeStatus) {
+  if (poeStatus === null || poeStatus === undefined) return '';
+  const text = String(poeStatus).trim();
+  const lower = text.toLowerCase();
+  if (!text || lower === 'off' || lower === 'disabled' || lower === 'none') return '';
+  return text;
+}
+
+function portIsStale(device, port, results, equipment) {
+  const hostname = device.hostname || '';
+  const deviceId = device.device_id || '';
+  const portId = port.port_id || '';
+  const portName = port.name || '';
+  const connected = port.connected_device_id || '';
+  const nameKey = hostname + ':' + portName;
+  const refs = {};
+  [portId, deviceId + ':' + portName, hostname + ':' + portName, portName].forEach(ref => {
+    if (ref) refs[ref] = true;
+  });
+  const touching = {};
+  (equipment || []).forEach(eq => {
+    const connectedPorts = eq.connected_ports || [];
+    for (let i = 0; i < connectedPorts.length; i++) {
+      if (refs[connectedPorts[i]]) {
+        touching[eq.equipment_id] = true;
+        break;
+      }
+    }
+  });
+  for (let i = 0; i < (results || []).length; i++) {
+    const res = results[i];
+    if (res.classification !== 'Stale / Likely Unused') continue;
+    const itemId = res.item_id || '';
+    if (itemId === portId) return true;
+    if (res.name === nameKey) return true;
+    if (connected && itemId === connected) return true;
+    if (touching[itemId]) return true;
+  }
+  return false;
+}
+
+function portIsUplink(device, port, graph) {
+  const portName = String(port.name || '');
+  const lowered = portName.toLowerCase();
+  if (lowered.indexOf('trunk') !== -1 || lowered.indexOf('uplink') !== -1) return true;
+  const deviceId = device.device_id || '';
+  const ids = {};
+  ids[deviceId] = true;
+  ids['router:' + deviceId] = true;
+  ids['switch:' + deviceId] = true;
+  const edges = (graph && graph.edges) || [];
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i];
+    if (edge.relation !== 'uplink_to' || edge.port_name !== portName) continue;
+    if (ids[edge.source_id] || ids[edge.target_id]) return true;
+  }
+  return false;
+}
+
+function faceplateAccessName(portName, fill, poe) {
+  const state = FACEPLATE_STATE_LABEL[fill] || 'Down';
+  let name = portName + ', ' + state;
+  if (poe) name += ', PoE ' + poe;
+  return name;
+}
+
+function renderSwitchFaceplate() {
+  const site = (WORKBENCH_STATE && WORKBENCH_STATE.site) || {};
+  const devices = site.devices || [];
+  const sel = document.getElementById('pm-device-id');
+  const selectedId = sel ? sel.value : '';
+  const device = devices.find(d => d.device_id === selectedId) || devices[0] || null;
+  const face = document.getElementById('switch-faceplate');
+  const heading = document.getElementById('faceplate-hostname');
+  if (heading) heading.textContent = device ? (device.hostname || '') : '';
+  if (!face) return;
+  if (!device) {
+    face.setAttribute('data-device-id', '');
+    face.setAttribute('data-rows', '2');
+    face.setAttribute('data-faceplate-columns', '0');
+    face.removeAttribute('data-template-ports');
+    face.style.gridTemplateColumns = '';
+    face.innerHTML = '<em>No ports provisioned</em>';
+    return;
+  }
+  const ports = device.ports || [];
+  const columns = faceplateColumns(ports.length);
+  const templatePorts = templatePortsAttr(device.vendor, device.model);
+  face.setAttribute('data-device-id', device.device_id || '');
+  face.setAttribute('data-rows', '2');
+  face.setAttribute('data-faceplate-columns', String(columns));
+  if (templatePorts) face.setAttribute('data-template-ports', templatePorts);
+  else face.removeAttribute('data-template-ports');
+  face.style.gridTemplateColumns = columns
+    ? 'repeat(' + columns + ', minmax(5rem, max-content))'
+    : '';
+  if (!ports.length) {
+    face.innerHTML = '<em>No ports provisioned</em>';
+    return;
+  }
+  const results = (WORKBENCH_STATE && WORKBENCH_STATE.results) || [];
+  const equipment = site.equipment || [];
+  const activeName = (document.getElementById('pm-port-name').value || '');
+  face.innerHTML = ports.map(port => {
+    let fill = 'faceplate-down';
+    if (portIsStale(device, port, results, equipment)) fill = 'faceplate-stale';
+    else if (portIsUplink(device, port, TOPOLOGY_GRAPH)) fill = 'faceplate-uplink';
+    else if (String(port.oper_status || '').trim().toLowerCase() === 'up') fill = 'faceplate-up';
+    const poe = poeBadgeText(port.poe_status);
+    const badge = poe
+      ? '<span class="' + 'faceplate-poe-badge' + '">' + escapeHtml(poe) + '</span>'
+      : '';
+    const access = faceplateAccessName(port.name || '', fill, poe);
+    const selected = activeName && port.name === activeName;
+    return '<button type="button" class="' + 'faceplate-port' + ' ' + fill
+      + (selected ? ' faceplate-selected' : '')
+      + '" data-port-id="' + escapeHtml(port.port_id)
+      + '" data-port-name="' + escapeHtml(port.name)
+      + '" title="' + escapeHtml(access)
+      + '" aria-label="' + escapeHtml(access) + '"'
+      + (selected ? ' aria-current="true"' : '')
+      + '>'
+      + escapeHtml(port.name) + badge + '</button>';
+  }).join('');
+}
+
+function drawTopology(graph) {
+  const nodes = (graph && graph.nodes) || [];
+  const edges = (graph && graph.edges) || [];
+  const grouped = {};
+  TOPO_COLUMN_ORDER.forEach(nodeType => { grouped[nodeType] = []; });
+  nodes.forEach(node => {
+    if (!grouped[node.node_type]) grouped[node.node_type] = [];
+    grouped[node.node_type].push(node);
+  });
+  const positions = {};
+  let maxRows = 1;
+  TOPO_COLUMN_ORDER.forEach((nodeType, colIndex) => {
+    const columnNodes = grouped[nodeType] || [];
+    if (columnNodes.length > maxRows) maxRows = columnNodes.length;
+    columnNodes.forEach((node, rowIndex) => {
+      positions[node.node_id] = {
+        x: TOPO_PAD_X + colIndex * TOPO_COL_WIDTH,
+        y: TOPO_PAD_Y + rowIndex * TOPO_ROW_HEIGHT
+      };
+    });
+  });
+  const width = TOPO_PAD_X * 2 + TOPO_COLUMN_ORDER.length * TOPO_COL_WIDTH;
+  const height = TOPO_PAD_Y + maxRows * TOPO_ROW_HEIGHT + 16;
+  const svg = document.getElementById('topology-svg');
+  svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+  svg.style.width = width + 'px';
+  svg.style.height = height + 'px';
+  const lines = edges.map(edge => {
+    const src = positions[edge.source_id] || {x: 0, y: 0};
+    const dst = positions[edge.target_id] || {x: 0, y: 0};
+    const ends = edgeEndpoints(src, dst);
+    return '<line class="' + 'topo-edge' + '" data-relation="' + escapeHtml(edge.relation)
+      + '" x1="' + ends.x1 + '" y1="' + ends.y1 + '" x2="' + ends.x2 + '" y2="' + ends.y2 + '" />';
+  }).join('');
+  const textY = TOPO_NODE_H / 2;
+  const groups = nodes.map(node => {
+    const pos = positions[node.node_id] || {x: 0, y: 0};
+    const access = (node.node_type || '') + ' ' + (node.label || '');
+    return '<g class="' + 'topo-node' + '" data-node-id="' + escapeHtml(node.node_id)
+      + '" data-node-type="' + escapeHtml(node.node_type)
+      + '" role="button" tabindex="0" aria-label="' + escapeHtml(access)
+      + '" transform="translate(' + pos.x + ',' + pos.y + ')">'
+      + '<rect class="topo-node-box" width="' + TOPO_NODE_W + '" height="' + TOPO_NODE_H
+      + '" rx="6" ry="6"></rect><text x="12" y="' + textY
+      + '" dominant-baseline="middle">' + escapeHtml(node.label) + '</text></g>';
+  }).join('');
+  svg.innerHTML = lines + groups;
+  document.getElementById('topology-mermaid').innerHTML = escapeHtml((graph && graph.mermaid) || '');
+}
+
+function edgeEndpoints(src, dst) {
+  const syMid = src.y + TOPO_NODE_H / 2;
+  const dyMid = dst.y + TOPO_NODE_H / 2;
+  const sxMid = src.x + TOPO_NODE_W / 2;
+  const dxMid = dst.x + TOPO_NODE_W / 2;
+  if (src.x + TOPO_NODE_W <= dst.x) {
+    return {x1: src.x + TOPO_NODE_W, y1: syMid, x2: dst.x, y2: dyMid};
+  }
+  if (dst.x + TOPO_NODE_W <= src.x) {
+    return {x1: src.x, y1: syMid, x2: dst.x + TOPO_NODE_W, y2: dyMid};
+  }
+  if (src.y + TOPO_NODE_H <= dst.y) {
+    return {x1: sxMid, y1: src.y + TOPO_NODE_H, x2: dxMid, y2: dst.y};
+  }
+  if (dst.y + TOPO_NODE_H <= src.y) {
+    return {x1: sxMid, y1: src.y, x2: dxMid, y2: dst.y + TOPO_NODE_H};
+  }
+  return {x1: sxMid, y1: syMid, x2: dxMid, y2: dyMid};
+}
+
+async function refreshTopologyMap() {
+  try {
+    const resp = await fetch('/api/topology');
+    if (!resp.ok) {
+      showBanner('Topology map could not be refreshed.', true);
+      return;
+    }
+    const data = await resp.json();
+    TOPOLOGY_GRAPH = data;
+    drawTopology(data);
+    renderSwitchFaceplate();
+  } catch (err) {
+    showBanner('Topology map could not be refreshed.', true);
+  }
+}
+
+function fillPortManagerForm(deviceId, fields) {
+  switchTab('tab-devices-ports');
+  const devSel = document.getElementById('pm-device-id');
+  if (deviceId) devSel.value = deviceId;
+  document.getElementById('pm-port-name').value = fields.name || '';
+  document.getElementById('pm-range-spec').value = '';
+  document.getElementById('pm-admin-status').value = fields.admin_status || '';
+  document.getElementById('pm-oper-status').value = fields.oper_status || '';
+  document.getElementById('pm-poe-status').value = fields.poe_status || '';
+  document.getElementById('pm-vlan-id').value = fields.vlan_id || '';
+  document.getElementById('pm-connected-mac').value = fields.connected_mac || '';
+  document.getElementById('pm-connected-device').value = fields.connected_device_id || '';
+  renderSwitchFaceplate();
+}
+
+function onTopologyNodeClick(el) {
+  document.querySelectorAll('.topo-node').forEach(nodeEl => {
+    nodeEl.classList.remove('topo-selected');
+  });
+  el.classList.add('topo-selected');
+  const nodeId = el.getAttribute('data-node-id');
+  const nodeType = el.getAttribute('data-node-type');
+  const nodes = (TOPOLOGY_GRAPH && TOPOLOGY_GRAPH.nodes) || [];
+  let node = null;
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].node_id === nodeId) {
+      node = nodes[i];
+      break;
+    }
+  }
+  if (nodeType === 'site' || nodeType === 'subnet') {
+    return;
+  }
+  if (!node) return;
+  if (nodeType === 'router' || nodeType === 'switch') {
+    openEditModal('NetworkDevice', node.node_id);
+    return;
+  }
+  if (nodeType === 'equipment') {
+    openEditModal('Equipment', node.node_id);
+    return;
+  }
+  if (nodeType === 'ip') {
+    openEditModal('IPAddress', node.node_id);
+    return;
+  }
+  if (nodeType === 'port') {
+    const meta = node.metadata || {};
+    fillPortManagerForm(meta.device_id, {
+      name: meta.name,
+      admin_status: meta.admin_status,
+      oper_status: meta.oper_status,
+      poe_status: meta.poe_status,
+      vlan_id: node.vlan_id || meta.vlan_id,
+      connected_mac: node.mac || meta.connected_mac,
+      connected_device_id: meta.connected_device_id
+    });
+    return;
+  }
+  if (nodeType === 'vlan') {
+    switchTab('tab-vlans');
+    const meta = node.metadata || {};
+    document.getElementById('vlan-id-input').value = node.vlan_id || '';
+    document.getElementById('vlan-name-input').value = node.label || '';
+    document.getElementById('vlan-subnet-id-input').value = meta.subnet_id || '';
+    document.getElementById('vlan-cidr-input').value = meta.cidr || '';
+    document.getElementById('vlan-gateway-input').value = meta.gateway || '';
+  }
+}
+
+function onFaceplatePortClick(btn) {
+  const portId = btn.getAttribute('data-port-id');
+  const face = btn.closest('#switch-faceplate');
+  const site = (WORKBENCH_STATE && WORKBENCH_STATE.site) || {};
+  const sel = document.getElementById('pm-device-id');
+  const deviceId = (sel && sel.value) || (face ? face.getAttribute('data-device-id') : '');
+  const device = (site.devices || []).find(d => d.device_id === deviceId);
+  if (!device) return;
+  const port = (device.ports || []).find(p => p.port_id === portId);
+  if (!port) return;
+  fillPortManagerForm(device.device_id, {
+    name: port.name,
+    admin_status: port.admin_status,
+    oper_status: port.oper_status,
+    poe_status: port.poe_status,
+    vlan_id: port.vlan_id,
+    connected_mac: port.connected_mac,
+    connected_device_id: port.connected_device_id
+  });
+  const nameField = document.getElementById('pm-port-name');
+  if (nameField && nameField.scrollIntoView) {
+    nameField.scrollIntoView({block: 'center'});
+  }
+}
+
+document.getElementById('pm-device-id').addEventListener('change', renderSwitchFaceplate);
+document.getElementById('topology-svg').addEventListener('click', ev => {
+  const el = ev.target.closest ? ev.target.closest('.topo-node') : null;
+  if (el) onTopologyNodeClick(el);
+});
+document.getElementById('topology-svg').addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const el = ev.target.closest ? ev.target.closest('.topo-node') : null;
+  if (!el) return;
+  ev.preventDefault();
+  onTopologyNodeClick(el);
+});
+document.getElementById('switch-faceplate').addEventListener('click', ev => {
+  const btn = ev.target.closest ? ev.target.closest('.faceplate-port') : null;
+  if (btn) onFaceplatePortClick(btn);
+});
+
+
+let IMPORT_LAST = null;
+const IMPORT_STATUS_BADGE = {
+  change: 'badge-info',
+  no_op: 'badge-insufficient',
+  conflict: 'badge-unreachable',
+  invalid: 'badge-stale'
+};
+
+function importStatusBadge(status, text) {
+  return '<span class="badge ' + (IMPORT_STATUS_BADGE[status] || 'badge-insufficient') + '">' + escapeHtml(text) + '</span>';
+}
+
+function importStatusMessage(status, data, fallback) {
+  if (status === 413) {
+    return 'CSV file is too large for the workbench upload limit: split it into smaller files.';
+  }
+  if (status === 409) {
+    return 'Import refused: ' + ((data && data.error) || 'the preview is out of date; preview again');
+  }
+  if (status === 0) {
+    return fallback + ' The server closed the connection; the CSV file may be too large for the workbench upload limit.';
+  }
+  return authFailureMessage(status) || (data && data.error) || fallback;
+}
+
+function setImportMessages(html, neutral) {
+  const el = document.getElementById('import-messages');
+  el.classList.toggle('import-messages-neutral', !!neutral);
+  el.innerHTML = html;
+}
+
+function invalidateImportPreview() {
+  IMPORT_LAST = null;
+  document.getElementById('import-apply-btn').disabled = true;
+}
+
+function clearImportPreview() {
+  invalidateImportPreview();
+  document.getElementById('import-preview-tbody').innerHTML = '';
+  document.getElementById('import-summary').textContent = '';
+}
+
+function formatImportValue(val) {
+  if (val === null || val === undefined) return '';
+  return String(val);
+}
+
+function renderImportPreview(preview) {
+  const tbody = document.getElementById('import-preview-tbody');
+  tbody.innerHTML = (preview.rows || []).map(row => (
+    '<tr data-import-status="' + escapeHtml(row.status) + '">' +
+    '<td>' + escapeHtml(row.row_number) + '</td>' +
+    '<td>' + escapeHtml(row.record_type) + '</td>' +
+    '<td>' + escapeHtml(row.record_id) + '</td>' +
+    '<td>' + escapeHtml(row.field) + '</td>' +
+    '<td>' + escapeHtml(formatImportValue(row.old_value)) + '</td>' +
+    '<td>' + escapeHtml(formatImportValue(row.new_value)) + '</td>' +
+    '<td>' + importStatusBadge(row.status, row.status) + '</td>' +
+    '<td>' + escapeHtml(row.reason) + '</td>' +
+    '<td>' + escapeHtml(row.detail) + '</td>' +
+    '</tr>'
+  )).join('');
+  const counts = preview.counts || {};
+  document.getElementById('import-summary').innerHTML = ['change', 'no_op', 'conflict', 'invalid'].map(
+    s => importStatusBadge(s, s + ': ' + (counts[s] || 0))
+  ).join(' ');
+  applyImportStatusFilter();
+}
+
+function applyImportStatusFilter() {
+  const wanted = document.getElementById('import-status-filter').value;
+  document.querySelectorAll('#import-preview-tbody tr').forEach(tr => {
+    tr.style.display = (!wanted || tr.dataset.importStatus === wanted) ? '' : 'none';
+  });
+}
+
+function importAsOfValue() {
+  const raw = document.getElementById('import-as-of').value;
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+async function postImport(route, payload) {
+  let resp;
+  try {
+    resp = await fetch(route, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + workbenchToken() },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    return { status: 0, data: {} };
+  }
+  let data = {};
+  try {
+    data = await resp.json();
+  } catch (err) {
+    data = {};
+  }
+  return { status: resp.status, ok: resp.ok, data: data };
+}
+
+async function previewImport() {
+  clearImportPreview();
+  setImportMessages('');
+  const input = document.getElementById('import-file');
+  const file = input.files && input.files[0];
+  if (!file) {
+    setImportMessages(escapeHtml('Choose a CSV file to preview.'), true);
+    return;
+  }
+  const csvText = await file.text();
+  const asOf = importAsOfValue();
+  const result = await postImport('/api/curation/preview', { csv: csvText, as_of: asOf });
+  if (result.ok && result.data.preview) {
+    const preview = result.data.preview;
+    renderImportPreview(preview);
+    IMPORT_LAST = { csv: csvText, as_of: asOf, confirm_token: preview.confirm_token };
+    document.getElementById('import-apply-btn').disabled = !preview.can_apply;
+    if (!preview.can_apply) {
+      const blocked = preview.counts.conflict || preview.counts.invalid;
+      setImportMessages(escapeHtml(
+        blocked
+          ? 'Apply is disabled: fix the conflict and invalid rows, then preview again.'
+          : 'Nothing to apply: every row matches the current values.'
+      ), !blocked);
+    }
+    return;
+  }
+  const errors = (result.data && result.data.errors) || [];
+  if (result.status === 400 && errors.length) {
+    setImportMessages('CSV has errors:<ul>' + errors.map(
+      e => '<li>' + escapeHtml('row ' + e.row + ': ' + e.message) + '</li>'
+    ).join('') + '</ul>');
+    return;
+  }
+  setImportMessages(escapeHtml(importStatusMessage(result.status, result.data, 'Preview failed.')));
+}
+
+async function applyImport() {
+  if (!IMPORT_LAST) return;
+  const pending = IMPORT_LAST;
+  document.getElementById('import-apply-btn').disabled = true;
+  const result = await postImport('/api/curation/apply', {
+    csv: pending.csv,
+    as_of: pending.as_of,
+    confirm_token: pending.confirm_token
+  });
+  if (result.ok && result.data.state) {
+    renderState(result.data.state);
+    clearImportPreview();
+    setImportMessages('');
+    document.getElementById('import-file').value = '';
+    showBanner('Applied ' + result.data.applied + ' change(s) as batch ' + result.data.batch_id, false);
+    return;
+  }
+  invalidateImportPreview();
+  const message = importStatusMessage(result.status, result.data, 'Apply failed.');
+  setImportMessages(escapeHtml(message));
+  showBanner(message, true);
+}
+
+
+const QUALITY_SEVERITY_BADGE = {
+  error: 'badge-stale',
+  warning: 'badge-unreachable',
+  info: 'badge-info'
+};
+const QUALITY_EMPTY_SITE_TEXT = 'No data-quality findings for this site.';
+const QUALITY_EMPTY_FILTER_TEXT = 'No findings match the selected filters.';
+
+function qualityRow(f) {
+  const badge = QUALITY_SEVERITY_BADGE[f.severity] || 'badge-insufficient';
+  return '<tr data-rule="' + escapeHtml(f.rule) + '" data-severity="' + escapeHtml(f.severity) + '">' +
+    '<td><code>' + escapeHtml(f.rule) + '</code></td>' +
+    '<td><span class="badge ' + badge + '">' + escapeHtml(f.severity) + '</span></td>' +
+    '<td>' + escapeHtml((f.record_ids || []).join(', ')) + '</td>' +
+    '<td>' + escapeHtml(f.message) + '</td>' +
+    '</tr>';
+}
+
+function applyQualityFilters() {
+  const rule = document.getElementById('quality-rule-filter').value;
+  const severity = document.getElementById('quality-severity-filter').value;
+  const rows = document.querySelectorAll('#quality-tbody tr');
+  let visible = 0;
+  rows.forEach(tr => {
+    const show = (!rule || tr.dataset.rule === rule) && (!severity || tr.dataset.severity === severity);
+    tr.style.display = show ? '' : 'none';
+    if (show) visible += 1;
+  });
+  const empty = document.getElementById('quality-empty');
+  if (!rows.length) {
+    empty.textContent = QUALITY_EMPTY_SITE_TEXT;
+    empty.hidden = false;
+  } else if (!visible) {
+    empty.textContent = QUALITY_EMPTY_FILTER_TEXT;
+    empty.hidden = false;
+  } else {
+    empty.hidden = true;
+  }
+}
+
+async function refreshQualityFindings() {
+  try {
+    const resp = await fetch('/api/quality');
+    if (!resp.ok) {
+      showBanner('Data quality findings could not be refreshed.', true);
+      return;
+    }
+    const data = await resp.json();
+    document.getElementById('quality-tbody').innerHTML = (data.findings || []).map(qualityRow).join('');
+    applyQualityFilters();
+  } catch (err) {
+    showBanner('Data quality findings could not be refreshed.', true);
+  }
+}
+
+</script>
+</body>
+</html>
