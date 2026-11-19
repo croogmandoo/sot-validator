@@ -1,0 +1,3643 @@
+{
+  "site_id": "synth-site-001",
+  "nodes": [
+    {
+      "node_id": "synth-site-001",
+      "node_type": "site",
+      "label": "synth-site 001",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": null,
+      "metadata": {
+        "address": "1 Synthetic Way, Example City",
+        "contact_info": "noc-s001@synth.example",
+        "rooms": [
+          "synth-s001-mdf"
+        ]
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01",
+      "node_type": "router",
+      "label": "synth-s001-rtr01",
+      "ip": "10.1.158.1",
+      "mac": "02:00:01:9e:01:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "vendor": "Ubiquiti",
+        "model": "UniFi Gateway Enterprise",
+        "role": "router",
+        "port_count": 8
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01",
+      "node_type": "switch",
+      "label": "synth-s001-sw01",
+      "ip": "10.1.158.3",
+      "mac": "02:00:01:9e:03:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "vendor": "Extreme Networks",
+        "model": "Summit X460-G2-48p",
+        "role": "switch",
+        "port_count": 48
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02",
+      "node_type": "switch",
+      "label": "synth-s001-sw02",
+      "ip": "10.1.235.3",
+      "mac": "02:00:01:eb:03:00",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "vendor": "Extreme Networks",
+        "model": "Summit X460-G2-48p",
+        "role": "switch",
+        "port_count": 48
+      }
+    },
+    {
+      "node_id": "synth-s001-ups01",
+      "node_type": "switch",
+      "label": "synth-s001-ups01",
+      "ip": "10.1.158.2",
+      "mac": "02:00:01:9e:02:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "vendor": "APC",
+        "model": "Smart-UPS SMT1500RM2U",
+        "role": "ups",
+        "port_count": 1
+      }
+    },
+    {
+      "node_id": "258",
+      "node_type": "vlan",
+      "label": "synth-s001-vlan258",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "cidr": "10.1.158.0/24",
+        "gateway": "10.1.158.1"
+      }
+    },
+    {
+      "node_id": "335",
+      "node_type": "vlan",
+      "label": "synth-s001-vlan335",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "cidr": "10.1.235.0/24",
+        "gateway": "10.1.235.1"
+      }
+    },
+    {
+      "node_id": "synth-site-001-net-158",
+      "node_type": "subnet",
+      "label": "synth-s001-vlan258",
+      "ip": "10.1.158.1",
+      "mac": null,
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "cidr": "10.1.158.0/24",
+        "gateway": "10.1.158.1"
+      }
+    },
+    {
+      "node_id": "synth-site-001-net-235",
+      "node_type": "subnet",
+      "label": "synth-s001-vlan335",
+      "ip": "10.1.235.1",
+      "mac": null,
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "cidr": "10.1.235.0/24",
+        "gateway": "10.1.235.1"
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth1",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth1",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth1",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth2",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth2",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth2",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth3",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth3",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth3",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth4",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth4",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth4",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth5",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth5",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth5",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth6",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth6",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth6",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth7",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth7",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth7",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-rtr01:eth8",
+      "node_type": "port",
+      "label": "synth-s001-rtr01:eth8",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-rtr01",
+        "name": "eth8",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:1",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:1",
+      "ip": null,
+      "mac": "02:00:01:9e:02:00",
+      "vlan_id": "258",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:1",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-ups01"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:2",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:2",
+      "ip": null,
+      "mac": "02:00:01:9e:22:01",
+      "vlan_id": "258",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:2",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-158-034"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:3",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:3",
+      "ip": null,
+      "mac": "02:00:01:9e:63:01",
+      "vlan_id": "258",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:3",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-158-099"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:4",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:4",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:4",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:5",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:5",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:5",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:6",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:6",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:6",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:7",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:7",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:7",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:8",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:8",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:8",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:9",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:9",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:9",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:10",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:10",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:10",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:11",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:11",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:11",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:12",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:12",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:12",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:13",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:13",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:13",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:14",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:14",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:14",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:15",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:15",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:15",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:16",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:16",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:16",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:17",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:17",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:17",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:18",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:18",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:18",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:19",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:19",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:19",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:20",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:20",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:20",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:21",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:21",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:21",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:22",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:22",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:22",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:23",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:23",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:23",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:24",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:24",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:24",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:25",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:25",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:25",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:26",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:26",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:26",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:27",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:27",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:27",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:28",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:28",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:28",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:29",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:29",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:29",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:30",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:30",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:30",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:31",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:31",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:31",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:32",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:32",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:32",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:33",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:33",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:33",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:34",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:34",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:34",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:35",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:35",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:35",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:36",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:36",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:36",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:37",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:37",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:37",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:38",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:38",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:38",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:39",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:39",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:39",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:40",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:40",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:40",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:41",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:41",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:41",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:42",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:42",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:42",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:43",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:43",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:43",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:44",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:44",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:44",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:45",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:45",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:45",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:46",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:46",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:46",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:47",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:47",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:47",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw01:1:48",
+      "node_type": "port",
+      "label": "synth-s001-sw01:1:48",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "258",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw01",
+        "name": "1:48",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:1",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:1",
+      "ip": null,
+      "mac": "02:00:01:eb:33:01",
+      "vlan_id": "335",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:1",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-235-051"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:2",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:2",
+      "ip": null,
+      "mac": "02:00:01:eb:4c:01",
+      "vlan_id": "335",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:2",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-235-076"
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:3",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:3",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:3",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:4",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:4",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:4",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:5",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:5",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:5",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:6",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:6",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:6",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:7",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:7",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:7",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:8",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:8",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:8",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:9",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:9",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:9",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:10",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:10",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:10",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:11",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:11",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:11",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:12",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:12",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:12",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:13",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:13",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:13",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:14",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:14",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:14",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:15",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:15",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:15",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:16",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:16",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:16",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:17",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:17",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:17",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:18",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:18",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:18",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:19",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:19",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:19",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:20",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:20",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:20",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:21",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:21",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:21",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:22",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:22",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:22",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:23",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:23",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:23",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:24",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:24",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:24",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:25",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:25",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:25",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:26",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:26",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:26",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:27",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:27",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:27",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:28",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:28",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:28",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:29",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:29",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:29",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:30",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:30",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:30",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:31",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:31",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:31",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:32",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:32",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:32",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:33",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:33",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:33",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:34",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:34",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:34",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:35",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:35",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:35",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:36",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:36",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:36",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:37",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:37",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:37",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:38",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:38",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:38",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:39",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:39",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:39",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:40",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:40",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:40",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:41",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:41",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:41",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:42",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:42",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:42",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:43",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:43",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:43",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:44",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:44",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:44",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:45",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:45",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:45",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:46",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:46",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:46",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:47",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:47",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:47",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": "auto",
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-sw02:1:48",
+      "node_type": "port",
+      "label": "synth-s001-sw02:1:48",
+      "ip": null,
+      "mac": null,
+      "vlan_id": "335",
+      "status": "up",
+      "metadata": {
+        "device_id": "synth-s001-sw02",
+        "name": "1:48",
+        "admin_status": "up",
+        "oper_status": "up",
+        "poe_status": "auto",
+        "connected_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "synth-s001-ups01:mgmt1",
+      "node_type": "port",
+      "label": "synth-s001-ups01:mgmt1",
+      "ip": null,
+      "mac": null,
+      "vlan_id": null,
+      "status": "down",
+      "metadata": {
+        "device_id": "synth-s001-ups01",
+        "name": "mgmt1",
+        "admin_status": "up",
+        "oper_status": "down",
+        "poe_status": null,
+        "connected_device_id": null
+      }
+    },
+    {
+      "node_id": "synth-s001-158-034",
+      "node_type": "equipment",
+      "label": "synth-s001-srv-158-034",
+      "ip": "10.1.158.34",
+      "mac": "02:00:01:9e:22:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "category": "server",
+        "assigned_ips": [
+          "10.1.158.34"
+        ],
+        "connected_ports": [
+          "synth-s001-sw01:1:2"
+        ],
+        "hypervisor_id": null,
+        "power_state": null
+      }
+    },
+    {
+      "node_id": "synth-s001-158-099",
+      "node_type": "equipment",
+      "label": "synth-s001-srv-158-099",
+      "ip": "10.1.158.99",
+      "mac": "02:00:01:9e:63:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "category": "server",
+        "assigned_ips": [
+          "10.1.158.99"
+        ],
+        "connected_ports": [
+          "synth-s001-sw01:1:3"
+        ],
+        "hypervisor_id": null,
+        "power_state": null
+      }
+    },
+    {
+      "node_id": "synth-s001-158-139",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-158-139",
+      "ip": "10.1.158.139",
+      "mac": "02:00:01:9e:8b:01",
+      "vlan_id": "258",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.158.139"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx03",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-158-148",
+      "node_type": "equipment",
+      "label": "synth-s001-lnx-vm-158-148",
+      "ip": "10.1.158.148",
+      "mac": "02:00:01:9e:94:01",
+      "vlan_id": "258",
+      "status": "poweredOff",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.158.148"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx04",
+        "power_state": "poweredOff"
+      }
+    },
+    {
+      "node_id": "synth-s001-158-207",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-158-207",
+      "ip": "10.1.158.207",
+      "mac": "02:00:01:9e:cf:01",
+      "vlan_id": "258",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.158.207"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx01",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-158-213",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-158-213",
+      "ip": "10.1.158.213",
+      "mac": "02:00:01:9e:d5:01",
+      "vlan_id": "258",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.158.213"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx02",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-235-018",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-235-018",
+      "ip": "10.1.235.18",
+      "mac": "02:00:01:eb:12:01",
+      "vlan_id": "335",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.235.18"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx03",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-235-051",
+      "node_type": "equipment",
+      "label": "synth-s001-srv-235-051",
+      "ip": "10.1.235.51",
+      "mac": "02:00:01:eb:33:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "category": "server",
+        "assigned_ips": [
+          "10.1.235.51"
+        ],
+        "connected_ports": [
+          "synth-s001-sw02:1:1"
+        ],
+        "hypervisor_id": null,
+        "power_state": null
+      }
+    },
+    {
+      "node_id": "synth-s001-235-076",
+      "node_type": "equipment",
+      "label": "synth-s001-srv-235-076",
+      "ip": "10.1.235.76",
+      "mac": "02:00:01:eb:4c:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "category": "server",
+        "assigned_ips": [
+          "10.1.235.76"
+        ],
+        "connected_ports": [
+          "synth-s001-sw02:1:2"
+        ],
+        "hypervisor_id": null,
+        "power_state": null
+      }
+    },
+    {
+      "node_id": "synth-s001-235-113",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-235-113",
+      "ip": "10.1.235.113",
+      "mac": "02:00:01:eb:71:01",
+      "vlan_id": "335",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.235.113"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx02",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-235-185",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-235-185",
+      "ip": "10.1.235.185",
+      "mac": "02:00:01:eb:b9:01",
+      "vlan_id": "335",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.235.185"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx03",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "synth-s001-235-251",
+      "node_type": "equipment",
+      "label": "synth-s001-win-vm-235-251",
+      "ip": "10.1.235.251",
+      "mac": "02:00:01:eb:fb:01",
+      "vlan_id": "335",
+      "status": "poweredOn",
+      "metadata": {
+        "category": "vm",
+        "assigned_ips": [
+          "10.1.235.251"
+        ],
+        "connected_ports": [],
+        "hypervisor_id": "synth-s001-esx04",
+        "power_state": "poweredOn"
+      }
+    },
+    {
+      "node_id": "10.1.158.1",
+      "node_type": "ip",
+      "label": "10.1.158.1",
+      "ip": "10.1.158.1",
+      "mac": "02:00:01:9e:01:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "NetworkDevice",
+        "assigned_object_id": "synth-s001-rtr01",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.1",
+      "node_type": "ip",
+      "label": "10.1.235.1",
+      "ip": "10.1.235.1",
+      "mac": "02:00:01:eb:01:00",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "NetworkDevice",
+        "assigned_object_id": "synth-s001-rtr01",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.2",
+      "node_type": "ip",
+      "label": "10.1.158.2",
+      "ip": "10.1.158.2",
+      "mac": "02:00:01:9e:02:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "NetworkDevice",
+        "assigned_object_id": "synth-s001-ups01",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.3",
+      "node_type": "ip",
+      "label": "10.1.158.3",
+      "ip": "10.1.158.3",
+      "mac": "02:00:01:9e:03:00",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "NetworkDevice",
+        "assigned_object_id": "synth-s001-sw01",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.3",
+      "node_type": "ip",
+      "label": "10.1.235.3",
+      "ip": "10.1.235.3",
+      "mac": "02:00:01:eb:03:00",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "NetworkDevice",
+        "assigned_object_id": "synth-s001-sw02",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.34",
+      "node_type": "ip",
+      "label": "10.1.158.34",
+      "ip": "10.1.158.34",
+      "mac": "02:00:01:9e:22:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-034",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.99",
+      "node_type": "ip",
+      "label": "10.1.158.99",
+      "ip": "10.1.158.99",
+      "mac": "02:00:01:9e:63:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-099",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.139",
+      "node_type": "ip",
+      "label": "10.1.158.139",
+      "ip": "10.1.158.139",
+      "mac": "02:00:01:9e:8b:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-139",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.148",
+      "node_type": "ip",
+      "label": "10.1.158.148",
+      "ip": "10.1.158.148",
+      "mac": "02:00:01:9e:94:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-148",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.207",
+      "node_type": "ip",
+      "label": "10.1.158.207",
+      "ip": "10.1.158.207",
+      "mac": "02:00:01:9e:cf:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-207",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.158.213",
+      "node_type": "ip",
+      "label": "10.1.158.213",
+      "ip": "10.1.158.213",
+      "mac": "02:00:01:9e:d5:01",
+      "vlan_id": "258",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-158",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-158-213",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.18",
+      "node_type": "ip",
+      "label": "10.1.235.18",
+      "ip": "10.1.235.18",
+      "mac": "02:00:01:eb:12:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-018",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.51",
+      "node_type": "ip",
+      "label": "10.1.235.51",
+      "ip": "10.1.235.51",
+      "mac": "02:00:01:eb:33:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-051",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.76",
+      "node_type": "ip",
+      "label": "10.1.235.76",
+      "ip": "10.1.235.76",
+      "mac": "02:00:01:eb:4c:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-076",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.113",
+      "node_type": "ip",
+      "label": "10.1.235.113",
+      "ip": "10.1.235.113",
+      "mac": "02:00:01:eb:71:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-113",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.185",
+      "node_type": "ip",
+      "label": "10.1.235.185",
+      "ip": "10.1.235.185",
+      "mac": "02:00:01:eb:b9:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-185",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    },
+    {
+      "node_id": "10.1.235.251",
+      "node_type": "ip",
+      "label": "10.1.235.251",
+      "ip": "10.1.235.251",
+      "mac": "02:00:01:eb:fb:01",
+      "vlan_id": "335",
+      "status": null,
+      "metadata": {
+        "subnet_id": "synth-site-001-net-235",
+        "assigned_object_type": "Equipment",
+        "assigned_object_id": "synth-s001-235-251",
+        "arp_source_device_id": "synth-s001-rtr01"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "synth-site-001",
+      "target_id": "synth-s001-rtr01",
+      "relation": "uplink_to",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-ups01",
+      "relation": "uplink_to",
+      "port_name": "1:1",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-rtr01",
+      "relation": "uplink_to",
+      "port_name": "1:48",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-rtr01",
+      "relation": "uplink_to",
+      "port_name": "1:48",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-ups01",
+      "target_id": "synth-s001-rtr01",
+      "relation": "uplink_to",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "335",
+      "relation": "routes_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "258",
+      "relation": "routes_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-site-001-net-158",
+      "relation": "routes_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-site-001-net-235",
+      "relation": "routes_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth1",
+      "relation": "connected_port",
+      "port_name": "eth1",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth2",
+      "relation": "connected_port",
+      "port_name": "eth2",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth3",
+      "relation": "connected_port",
+      "port_name": "eth3",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth4",
+      "relation": "connected_port",
+      "port_name": "eth4",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth5",
+      "relation": "connected_port",
+      "port_name": "eth5",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth6",
+      "relation": "connected_port",
+      "port_name": "eth6",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth7",
+      "relation": "connected_port",
+      "port_name": "eth7",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "synth-s001-rtr01:eth8",
+      "relation": "connected_port",
+      "port_name": "eth8",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:1",
+      "relation": "connected_port",
+      "port_name": "1:1",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01:1:1",
+      "target_id": "synth-s001-ups01",
+      "relation": "connected_port",
+      "port_name": "1:1",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:2",
+      "relation": "connected_port",
+      "port_name": "1:2",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01:1:2",
+      "target_id": "synth-s001-158-034",
+      "relation": "connected_port",
+      "port_name": "1:2",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:3",
+      "relation": "connected_port",
+      "port_name": "1:3",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01:1:3",
+      "target_id": "synth-s001-158-099",
+      "relation": "connected_port",
+      "port_name": "1:3",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:4",
+      "relation": "connected_port",
+      "port_name": "1:4",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:5",
+      "relation": "connected_port",
+      "port_name": "1:5",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:6",
+      "relation": "connected_port",
+      "port_name": "1:6",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:7",
+      "relation": "connected_port",
+      "port_name": "1:7",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:8",
+      "relation": "connected_port",
+      "port_name": "1:8",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:9",
+      "relation": "connected_port",
+      "port_name": "1:9",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:10",
+      "relation": "connected_port",
+      "port_name": "1:10",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:11",
+      "relation": "connected_port",
+      "port_name": "1:11",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:12",
+      "relation": "connected_port",
+      "port_name": "1:12",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:13",
+      "relation": "connected_port",
+      "port_name": "1:13",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:14",
+      "relation": "connected_port",
+      "port_name": "1:14",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:15",
+      "relation": "connected_port",
+      "port_name": "1:15",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:16",
+      "relation": "connected_port",
+      "port_name": "1:16",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:17",
+      "relation": "connected_port",
+      "port_name": "1:17",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:18",
+      "relation": "connected_port",
+      "port_name": "1:18",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:19",
+      "relation": "connected_port",
+      "port_name": "1:19",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:20",
+      "relation": "connected_port",
+      "port_name": "1:20",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:21",
+      "relation": "connected_port",
+      "port_name": "1:21",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:22",
+      "relation": "connected_port",
+      "port_name": "1:22",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:23",
+      "relation": "connected_port",
+      "port_name": "1:23",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:24",
+      "relation": "connected_port",
+      "port_name": "1:24",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:25",
+      "relation": "connected_port",
+      "port_name": "1:25",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:26",
+      "relation": "connected_port",
+      "port_name": "1:26",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:27",
+      "relation": "connected_port",
+      "port_name": "1:27",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:28",
+      "relation": "connected_port",
+      "port_name": "1:28",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:29",
+      "relation": "connected_port",
+      "port_name": "1:29",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:30",
+      "relation": "connected_port",
+      "port_name": "1:30",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:31",
+      "relation": "connected_port",
+      "port_name": "1:31",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:32",
+      "relation": "connected_port",
+      "port_name": "1:32",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:33",
+      "relation": "connected_port",
+      "port_name": "1:33",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:34",
+      "relation": "connected_port",
+      "port_name": "1:34",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:35",
+      "relation": "connected_port",
+      "port_name": "1:35",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:36",
+      "relation": "connected_port",
+      "port_name": "1:36",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:37",
+      "relation": "connected_port",
+      "port_name": "1:37",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:38",
+      "relation": "connected_port",
+      "port_name": "1:38",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:39",
+      "relation": "connected_port",
+      "port_name": "1:39",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:40",
+      "relation": "connected_port",
+      "port_name": "1:40",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:41",
+      "relation": "connected_port",
+      "port_name": "1:41",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:42",
+      "relation": "connected_port",
+      "port_name": "1:42",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:43",
+      "relation": "connected_port",
+      "port_name": "1:43",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:44",
+      "relation": "connected_port",
+      "port_name": "1:44",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:45",
+      "relation": "connected_port",
+      "port_name": "1:45",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:46",
+      "relation": "connected_port",
+      "port_name": "1:46",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:47",
+      "relation": "connected_port",
+      "port_name": "1:47",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "synth-s001-sw01:1:48",
+      "relation": "connected_port",
+      "port_name": "1:48",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw01:1:48",
+      "target_id": "synth-s001-rtr01",
+      "relation": "connected_port",
+      "port_name": "1:48",
+      "vlan_id": "258",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:1",
+      "relation": "connected_port",
+      "port_name": "1:1",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02:1:1",
+      "target_id": "synth-s001-235-051",
+      "relation": "connected_port",
+      "port_name": "1:1",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:2",
+      "relation": "connected_port",
+      "port_name": "1:2",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02:1:2",
+      "target_id": "synth-s001-235-076",
+      "relation": "connected_port",
+      "port_name": "1:2",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:3",
+      "relation": "connected_port",
+      "port_name": "1:3",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:4",
+      "relation": "connected_port",
+      "port_name": "1:4",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:5",
+      "relation": "connected_port",
+      "port_name": "1:5",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:6",
+      "relation": "connected_port",
+      "port_name": "1:6",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:7",
+      "relation": "connected_port",
+      "port_name": "1:7",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:8",
+      "relation": "connected_port",
+      "port_name": "1:8",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:9",
+      "relation": "connected_port",
+      "port_name": "1:9",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:10",
+      "relation": "connected_port",
+      "port_name": "1:10",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:11",
+      "relation": "connected_port",
+      "port_name": "1:11",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:12",
+      "relation": "connected_port",
+      "port_name": "1:12",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:13",
+      "relation": "connected_port",
+      "port_name": "1:13",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:14",
+      "relation": "connected_port",
+      "port_name": "1:14",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:15",
+      "relation": "connected_port",
+      "port_name": "1:15",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:16",
+      "relation": "connected_port",
+      "port_name": "1:16",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:17",
+      "relation": "connected_port",
+      "port_name": "1:17",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:18",
+      "relation": "connected_port",
+      "port_name": "1:18",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:19",
+      "relation": "connected_port",
+      "port_name": "1:19",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:20",
+      "relation": "connected_port",
+      "port_name": "1:20",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:21",
+      "relation": "connected_port",
+      "port_name": "1:21",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:22",
+      "relation": "connected_port",
+      "port_name": "1:22",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:23",
+      "relation": "connected_port",
+      "port_name": "1:23",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:24",
+      "relation": "connected_port",
+      "port_name": "1:24",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:25",
+      "relation": "connected_port",
+      "port_name": "1:25",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:26",
+      "relation": "connected_port",
+      "port_name": "1:26",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:27",
+      "relation": "connected_port",
+      "port_name": "1:27",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:28",
+      "relation": "connected_port",
+      "port_name": "1:28",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:29",
+      "relation": "connected_port",
+      "port_name": "1:29",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:30",
+      "relation": "connected_port",
+      "port_name": "1:30",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:31",
+      "relation": "connected_port",
+      "port_name": "1:31",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:32",
+      "relation": "connected_port",
+      "port_name": "1:32",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:33",
+      "relation": "connected_port",
+      "port_name": "1:33",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:34",
+      "relation": "connected_port",
+      "port_name": "1:34",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:35",
+      "relation": "connected_port",
+      "port_name": "1:35",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:36",
+      "relation": "connected_port",
+      "port_name": "1:36",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:37",
+      "relation": "connected_port",
+      "port_name": "1:37",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:38",
+      "relation": "connected_port",
+      "port_name": "1:38",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:39",
+      "relation": "connected_port",
+      "port_name": "1:39",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:40",
+      "relation": "connected_port",
+      "port_name": "1:40",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:41",
+      "relation": "connected_port",
+      "port_name": "1:41",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:42",
+      "relation": "connected_port",
+      "port_name": "1:42",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:43",
+      "relation": "connected_port",
+      "port_name": "1:43",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:44",
+      "relation": "connected_port",
+      "port_name": "1:44",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:45",
+      "relation": "connected_port",
+      "port_name": "1:45",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:46",
+      "relation": "connected_port",
+      "port_name": "1:46",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:47",
+      "relation": "connected_port",
+      "port_name": "1:47",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "synth-s001-sw02:1:48",
+      "relation": "connected_port",
+      "port_name": "1:48",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-sw02:1:48",
+      "target_id": "synth-s001-rtr01",
+      "relation": "connected_port",
+      "port_name": "1:48",
+      "vlan_id": "335",
+      "poe_status": "auto"
+    },
+    {
+      "source_id": "synth-s001-ups01",
+      "target_id": "synth-s001-ups01:mgmt1",
+      "relation": "connected_port",
+      "port_name": "mgmt1",
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-034",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-099",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-139",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-148",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-207",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-158-213",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-018",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-051",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-076",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-113",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-185",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-235-251",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-sw01",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "335",
+      "target_id": "synth-s001-sw02",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "335",
+      "poe_status": null
+    },
+    {
+      "source_id": "258",
+      "target_id": "synth-s001-ups01",
+      "relation": "member_of_vlan",
+      "port_name": null,
+      "vlan_id": "258",
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-034",
+      "target_id": "10.1.158.34",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-099",
+      "target_id": "10.1.158.99",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-139",
+      "target_id": "10.1.158.139",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-148",
+      "target_id": "10.1.158.148",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-207",
+      "target_id": "10.1.158.207",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-158-213",
+      "target_id": "10.1.158.213",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-018",
+      "target_id": "10.1.235.18",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-051",
+      "target_id": "10.1.235.51",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-076",
+      "target_id": "10.1.235.76",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-113",
+      "target_id": "10.1.235.113",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-185",
+      "target_id": "10.1.235.185",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-235-251",
+      "target_id": "10.1.235.251",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "10.1.158.1",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-rtr01",
+      "target_id": "10.1.235.1",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-ups01",
+      "target_id": "10.1.158.2",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-sw01",
+      "target_id": "10.1.158.3",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    },
+    {
+      "source_id": "synth-s001-sw02",
+      "target_id": "10.1.235.3",
+      "relation": "assigned_ip",
+      "port_name": null,
+      "vlan_id": null,
+      "poe_status": null
+    }
+  ],
+  "summary_counts": {
+    "total_nodes": 143,
+    "total_edges": 153,
+    "site": 1,
+    "router": 1,
+    "switch": 3,
+    "vlan": 2,
+    "subnet": 2,
+    "port": 105,
+    "equipment": 12,
+    "ip": 17,
+    "routes_vlan": 4,
+    "uplink_to": 5,
+    "member_of_vlan": 15,
+    "connected_port": 112,
+    "assigned_ip": 17,
+    "hosts_vm": 0
+  }
+}
