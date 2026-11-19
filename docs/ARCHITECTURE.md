@@ -162,6 +162,7 @@ With ~90% of VMs running Windows and ~100 sites running Extreme Networks switche
 - **Active Directory Computer Account & DNS/DHCP Lease Correlation (`src/sot_validator/signals/directory_dns.py`)**:
   - Correlates SoT server/VM hostnames and IPs against **Active Directory (`lastLogonTimestamp`, `pwdLastSet`, `operatingSystem`, `enabled` account state)**, **DNS (`A`/`PTR` forward/reverse alignment)**, and **DHCP active lease exports** across each site's `/24` subnets.
   - Resolves ambiguous Windows VMs/servers that block ICMP ping or reside on unpolled hypervisors, and detects stale DNS records or static/DHCP scope collisions.
+  - `directory_dns.py` is a re-export facade over `_directory_common.py` (hostname and flag helpers), `_directory_ad.py` (`AdComputerRecord`, `ActiveDirectoryCollector`), `_directory_dns_records.py` (`DnsRecord`, `DhcpLeaseRecord`) and `_directory_dns_collector.py` (`DnsDhcpLeaseCollector`).
 - **LLDP Uplink Guard & Staged Extreme Switch Port / PoE Reclamation Planner (`src/sot_validator/remediation/port_reclamation.py`)**:
   - Evaluates unused Extreme switch access ports (`oper DOWN` and zero ARP/MAC activity across consecutive runs) while enforcing a strict **LLDP / Trunk Uplink Safety Guard** (never proposing shutdown or PoE disablement on inter-switch trunks, router uplinks, WAPs, or APC UPS ports).
   - Generates vendor-specific **ExtremeXOS (`disable ports <port>`, `configure inline-power disable ports <port>`)** and **VOSS** staged change scripts paired with 1-command rollback scripts (`enable ports <port>`).
