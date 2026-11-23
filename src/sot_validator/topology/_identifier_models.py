@@ -17,6 +17,7 @@ from sot_validator.topology._identifier_helpers import (
 )
 from sot_validator.topology.device_types import DeviceTypeCatalog
 
+
 @dataclass
 class HostIdentification:
     """Evaluated network role and VLAN/subnet metadata for a discovered host."""

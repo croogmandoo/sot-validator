@@ -25,6 +25,7 @@ from sot_validator.topology._identifier_models import (
     HostIdentification,
 )
 
+
 class NetworkRoleIdentifier:
     """Heuristic classifier for routers, switches, VLANs, hypervisors, and network hosts."""
 
