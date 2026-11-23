@@ -100,6 +100,14 @@ def test_records_does_not_import_orchestrator_or_package() -> None:
         assert not stripped.startswith("from sot_validator.campaign import")
         assert stripped != "import sot_validator.campaign"
         assert not stripped.startswith("import sot_validator.campaign ")
+    # The only campaign import allowed is the leaf alerts module (AlertEvent).
+    campaign_imports = [
+        line.strip()
+        for line in source.splitlines()
+        if line.strip().startswith(("from sot_validator.campaign", "import sot_validator.campaign"))
+        or line.strip().startswith("from .")
+    ]
+    assert campaign_imports == ["from sot_validator.campaign.alerts import AlertEvent"]
 
 
 def test_campaign_modules_under_800_lines() -> None:
