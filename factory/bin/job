@@ -26,6 +26,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,6 +38,9 @@ CONFIG = json.loads((FACTORY / "config.json").read_text())
 LABELS = CONFIG["labels"]
 BASE = CONFIG["base_branch"]
 MARKER = "<!-- factory -->"
+# `gh pr merge` errors GitHub returns while it is still recomputing a PR after a push.
+TRANSIENT_MERGE_ERRORS = ("Base branch was modified", "Head branch was modified")
+MERGE_RETRY_DELAYS = (5, 10, 20)  # seconds between merge attempts
 
 TRANSITIONS = {
     "intake": {"needs-info", "rejected", "spec"},
@@ -676,13 +680,33 @@ def cmd_merge(job):
     if gate.returncode != 0:
         return fail(f"The gate failed after syncing with {BASE}. "
                     f"See round-{job['round']}/merge-checks.md.\n\n{gate.stdout.strip()}")
+    base_sha = git(job, "rev-parse", f"origin/{BASE}").stdout.strip()
     try:
         git(job, "push", "origin", job["branch"])
         if gh_json("pr", "view", str(job["pr"]), "--json", "isDraft")["isDraft"]:
             gh("pr", "ready", str(job["pr"]))
-        gh("pr", "merge", str(job["pr"]), f"--{CONFIG['merge_method']}")
     except Refused as e:
         return fail(f"The merge failed:\n\n```\n{e}\n```")
+    # Right after a push GitHub can reject the merge with "Base branch was
+    # modified" (or "Head branch was modified") while it is still recomputing
+    # the PR. Retry those, but only while origin/BASE is still the commit we
+    # synced with and gated; if it really moved, rebound so the gate re-runs.
+    for delay in MERGE_RETRY_DELAYS + (None,):
+        try:
+            gh("pr", "merge", str(job["pr"]), f"--{CONFIG['merge_method']}")
+            break
+        except Refused as e:
+            transient = any(s in str(e) for s in TRANSIENT_MERGE_ERRORS)
+            if delay is None or not transient:
+                return fail(f"The merge failed:\n\n```\n{e}\n```")
+            git(job, "fetch", "origin", BASE)
+            if git(job, "rev-parse", f"origin/{BASE}").stdout.strip() != base_sha:
+                return fail(f"{BASE} moved while merging; sync again.\n\n```\n{e}\n```")
+            print(f"{job['id']}: GitHub is still updating PR #{job['pr']}; retrying in {delay}s",
+                  file=sys.stderr)
+            time.sleep(delay)
+            if pr_state(job) == "MERGED":
+                break
     # GitHub may already have deleted the branch on merge.
     run(["git", "push", "origin", "--delete", job["branch"]], check=False)
     save(advance(sync(job), "merged"))
